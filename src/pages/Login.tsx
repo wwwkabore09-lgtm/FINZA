@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { translateAuthError } from '../lib/authErrors'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup'
@@ -35,7 +36,7 @@ export function Login() {
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+      setError(translateAuthError(err))
     } finally {
       setSubmitting(false)
     }
