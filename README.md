@@ -2,6 +2,10 @@
 
 Financial OS personnel et familial pour l'Afrique francophone. *Ton argent. Ta vision. Ton contrôle.*
 
+- **App en ligne** : https://finza-web-2026.vercel.app
+- **Dépôt** : https://github.com/wwwkabore09-lgtm/FINZA
+- **Déploiement continu** : chaque `git push` sur `main` redéploie automatiquement via Vercel.
+
 ## Stack
 
 - React + TypeScript + Vite
