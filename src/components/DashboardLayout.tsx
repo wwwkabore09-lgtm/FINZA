@@ -13,6 +13,8 @@ const NAV_ITEMS = [
 export function DashboardLayout() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const firstName = user?.user_metadata?.first_name as string | undefined
+  const displayName = firstName || user?.email
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -45,7 +47,7 @@ export function DashboardLayout() {
       <div className="flex-1">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
           <h1 className="text-lg font-semibold text-slate-900">
-            Bonjour{user?.email ? `, ${user.email}` : ''}
+            Bonjour{displayName ? `, ${displayName}` : ''}
           </h1>
           <button
             type="button"

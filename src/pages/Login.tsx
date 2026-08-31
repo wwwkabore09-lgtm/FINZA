@@ -8,6 +8,8 @@ type Mode = 'signin' | 'signup'
 export function Login() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>('signin')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -24,6 +26,12 @@ export function Login() {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
         })
         if (signUpError) throw signUpError
         if (data.session) {
@@ -67,6 +75,42 @@ export function Login() {
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {mode === 'signup' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="first-name"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Prénom
+                  </label>
+                  <input
+                    id="first-name"
+                    required
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder="Aïcha"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="last-name"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Nom
+                  </label>
+                  <input
+                    id="last-name"
+                    required
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder="Traoré"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label
                 htmlFor="email"
