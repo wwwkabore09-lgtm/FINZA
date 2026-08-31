@@ -21,12 +21,16 @@ export function Login() {
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         })
         if (signUpError) throw signUpError
-        setConfirmationSent(true)
+        if (data.session) {
+          navigate('/dashboard')
+        } else {
+          setConfirmationSent(true)
+        }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
