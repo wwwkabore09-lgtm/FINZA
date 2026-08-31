@@ -29,7 +29,7 @@ L'app est disponible sur http://localhost:5173.
    ```
 
 3. Renseigne `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (Project Settings → API) dans `.env.local`.
-4. Applique les migrations SQL du dossier `supabase/migrations` dans l'éditeur SQL du projet Supabase (ou via la CLI Supabase).
+4. Applique `supabase/migrations/20260831000000_init_schema.sql` dans l'éditeur SQL du projet Supabase (ou via `supabase db push` si tu utilises la CLI Supabase). Il crée les tables `households`, `household_members`, `accounts`, `categories`, `transactions`, `budgets`, `goals` avec Row Level Security activée : chaque utilisateur ne voit que les données des foyers dont il est membre.
 
 ## Structure du projet
 
