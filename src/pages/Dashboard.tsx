@@ -1,127 +1,186 @@
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useHousehold } from '../hooks/useHousehold'
+import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Account, Goal, Transaction } from '../types/finance'
 
-const MOCK_ACCOUNTS: Account[] = [
-  { id: '1', name: 'Orange Money', type: 'mobile_money', balance: 85000, currency: 'XOF' },
-  { id: '2', name: 'Compte courant UBA', type: 'bank', balance: 240000, currency: 'XOF' },
-  { id: '3', name: 'Espèces', type: 'cash', balance: 15000, currency: 'XOF' },
-]
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', accountId: '1', categoryId: 'food', amount: -3500, description: 'Marché', date: '2026-08-29' },
-  { id: '2', accountId: '2', categoryId: 'salary', amount: 180000, description: 'Salaire', date: '2026-08-25' },
-  { id: '3', accountId: '1', categoryId: 'transport', amount: -1000, description: 'Transport', date: '2026-08-28' },
-]
-
-const MOCK_GOALS: Goal[] = [
-  { id: '1', name: "Fonds d'urgence", targetAmount: 500000, currentAmount: 180000 },
-  { id: '2', name: 'Voyage', targetAmount: 300000, currentAmount: 60000 },
-]
-
-const currency = new Intl.NumberFormat('fr-FR', {
-  style: 'currency',
-  currency: 'XOF',
-  maximumFractionDigits: 0,
-})
+interface TransactionRow extends Transaction {
+  accounts: { name: string } | null
+}
 
 export function Dashboard() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
+  const { householdId, loading: householdLoading, error: householdError } = useHousehold()
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [transactions, setTransactions] = useState<TransactionRow[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
+  const [monthlyExpenses, setMonthlyExpenses] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const totalBalance = MOCK_ACCOUNTS.reduce((sum, account) => sum + account.balance, 0)
-  const monthlyExpenses = MOCK_TRANSACTIONS.filter((t) => t.amount < 0).reduce(
-    (sum, t) => sum + Math.abs(t.amount),
-    0,
-  )
+  useEffect(() => {
+    if (!householdId) return
+    let cancelled = false
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    navigate('/login')
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const [accountsRes, goalsRes] = await Promise.all([
+          supabase
+            .from('accounts')
+            .select('*')
+            .eq('household_id', householdId as string)
+            .order('created_at'),
+          supabase
+            .from('goals')
+            .select('*')
+            .eq('household_id', householdId as string)
+            .order('created_at'),
+        ])
+        if (accountsRes.error) throw accountsRes.error
+        if (goalsRes.error) throw goalsRes.error
+
+        const accountList = (accountsRes.data ?? []) as Account[]
+        const accountIds = accountList.map((account) => account.id)
+
+        let recentTransactions: TransactionRow[] = []
+        let expensesThisMonth = 0
+
+        if (accountIds.length > 0) {
+          const monthStart = new Date()
+          monthStart.setDate(1)
+          const monthStartStr = monthStart.toISOString().slice(0, 10)
+
+          const [recentRes, monthRes] = await Promise.all([
+            supabase
+              .from('transactions')
+              .select('*, accounts(name)')
+              .in('account_id', accountIds)
+              .order('date', { ascending: false })
+              .limit(5),
+            supabase
+              .from('transactions')
+              .select('amount')
+              .in('account_id', accountIds)
+              .gte('date', monthStartStr)
+              .lt('amount', 0),
+          ])
+          if (recentRes.error) throw recentRes.error
+          if (monthRes.error) throw monthRes.error
+
+          recentTransactions = (recentRes.data ?? []) as unknown as TransactionRow[]
+          expensesThisMonth = ((monthRes.data ?? []) as { amount: number }[]).reduce(
+            (sum, t) => sum + Math.abs(t.amount),
+            0,
+          )
+        }
+
+        if (!cancelled) {
+          setAccounts(accountList)
+          setGoals((goalsRes.data ?? []) as Goal[])
+          setTransactions(recentTransactions)
+          setMonthlyExpenses(expensesThisMonth)
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger tes données. Réessaie dans un instant.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [householdId])
+
+  if (householdLoading || loading) {
+    return <p className="text-sm text-slate-500">Chargement...</p>
   }
 
+  if (householdError || error) {
+    return (
+      <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        {householdError ?? error}
+      </p>
+    )
+  }
+
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0)
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="hidden w-60 flex-col border-r border-slate-200 bg-white p-6 sm:flex">
-        <span className="text-lg font-semibold text-slate-900">Finza</span>
-        <nav className="mt-8 flex flex-col gap-1 text-sm font-medium text-slate-600">
-          <span className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
-            Tableau de bord
-          </span>
-          <span className="rounded-lg px-3 py-2">Comptes</span>
-          <span className="rounded-lg px-3 py-2">Transactions</span>
-          <span className="rounded-lg px-3 py-2">Budgets</span>
-          <span className="rounded-lg px-3 py-2">Objectifs</span>
-        </nav>
-      </aside>
+    <div className="space-y-8">
+      <section className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-500">Solde total</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">
+            {formatCurrency(totalBalance)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-500">Dépenses du mois</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">
+            {formatCurrency(monthlyExpenses)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-500">Objectifs actifs</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900">{goals.length}</p>
+        </div>
+      </section>
 
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
-          <h1 className="text-lg font-semibold text-slate-900">
-            Bonjour{user?.email ? `, ${user.email}` : ''}
-          </h1>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+      {accounts.length === 0 ? (
+        <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <p className="text-sm text-slate-600">
+            Tu n'as pas encore de compte. Ajoute ton premier compte (Mobile
+            Money, banque ou espèces) pour commencer à suivre tes finances.
+          </p>
+          <Link
+            to="/accounts"
+            className="mt-4 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
           >
-            Se déconnecter
-          </button>
-        </header>
-
-        <main className="mx-auto max-w-6xl space-y-8 px-6 py-8">
-          <section className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-500">Solde total</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {currency.format(totalBalance)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-500">Dépenses du mois</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {currency.format(monthlyExpenses)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-500">Objectifs actifs</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {MOCK_GOALS.length}
-              </p>
-            </div>
-          </section>
-
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            Ajouter un compte
+          </Link>
+        </section>
+      ) : (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Comptes</h2>
-              <ul className="mt-4 space-y-3">
-                {MOCK_ACCOUNTS.map((account) => (
-                  <li
-                    key={account.id}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-slate-600">{account.name}</span>
-                    <span className="font-medium text-slate-900">
-                      {currency.format(account.balance)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <Link to="/accounts" className="text-sm text-emerald-600 hover:text-emerald-700">
+                Voir tout
+              </Link>
             </div>
+            <ul className="mt-4 space-y-3">
+              {accounts.map((account) => (
+                <li key={account.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">{account.name}</span>
+                  <span className="font-medium text-slate-900">
+                    {formatCurrency(account.balance, account.currency)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-base font-semibold text-slate-900">
-                Transactions récentes
-              </h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">Transactions récentes</h2>
+              <Link to="/transactions" className="text-sm text-emerald-600 hover:text-emerald-700">
+                Voir tout
+              </Link>
+            </div>
+            {transactions.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500">Aucune transaction pour l'instant.</p>
+            ) : (
               <ul className="mt-4 space-y-3">
-                {MOCK_TRANSACTIONS.map((transaction) => (
-                  <li
-                    key={transaction.id}
-                    className="flex items-center justify-between text-sm"
-                  >
+                {transactions.map((transaction) => (
+                  <li key={transaction.id} className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">
-                      {transaction.description}
+                      {transaction.description || transaction.accounts?.name}
                     </span>
                     <span
                       className={
@@ -130,43 +189,57 @@ export function Dashboard() {
                           : 'font-medium text-emerald-600'
                       }
                     >
-                      {currency.format(transaction.amount)}
+                      {formatCurrency(transaction.amount)}
                     </span>
                   </li>
                 ))}
               </ul>
-            </div>
-          </section>
+            )}
+          </div>
+        </section>
+      )}
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h2 className="text-base font-semibold text-slate-900">Objectifs</h2>
-            <div className="mt-4 space-y-4">
-              {MOCK_GOALS.map((goal) => {
-                const progress = Math.round(
-                  (goal.currentAmount / goal.targetAmount) * 100,
-                )
-                return (
-                  <div key={goal.id}>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-700">{goal.name}</span>
-                      <span className="text-slate-500">
-                        {currency.format(goal.currentAmount)} /{' '}
-                        {currency.format(goal.targetAmount)}
-                      </span>
-                    </div>
-                    <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
-                      <div
-                        className="h-2 rounded-full bg-emerald-500"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Objectifs</h2>
+          <Link to="/goals" className="text-sm text-emerald-600 hover:text-emerald-700">
+            Voir tout
+          </Link>
+        </div>
+        {goals.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-500">
+            Aucun objectif pour l'instant.{' '}
+            <Link to="/goals" className="text-emerald-600 hover:text-emerald-700">
+              Crée ton premier objectif d'épargne.
+            </Link>
+          </p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {goals.map((goal) => {
+              const progress = Math.min(
+                100,
+                Math.round((goal.current_amount / goal.target_amount) * 100),
+              )
+              return (
+                <div key={goal.id}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-700">{goal.name}</span>
+                    <span className="text-slate-500">
+                      {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
+                    </span>
                   </div>
-                )
-              })}
-            </div>
-          </section>
-        </main>
-      </div>
+                  <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
+                    <div
+                      className="h-2 rounded-full bg-emerald-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
