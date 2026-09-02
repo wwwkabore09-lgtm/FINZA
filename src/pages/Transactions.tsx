@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
 import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
@@ -109,7 +110,7 @@ export function Transactions() {
   }
 
   if (householdLoading || loading) {
-    return <p className="text-sm text-slate-500">Chargement...</p>
+    return <LoadingState />
   }
 
   if (accounts.length === 0) {

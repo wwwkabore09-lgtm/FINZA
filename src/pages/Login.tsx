@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Logo } from '../components/Logo'
+import { Spinner } from '../components/Spinner'
 import { translateAuthError } from '../lib/authErrors'
 import { supabase } from '../lib/supabase'
 
@@ -58,8 +60,8 @@ export function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <Link to="/" className="text-lg font-semibold text-slate-900">
-          Finza
+        <Link to="/" className="inline-block">
+          <Logo />
         </Link>
         <h1 className="mt-4 text-2xl font-bold text-slate-900">
           {mode === 'signin' ? 'Connexion' : 'Créer un compte'}
@@ -157,8 +159,9 @@ export function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
             >
+              {submitting && <Spinner className="border-white/40 border-t-white" />}
               {submitting
                 ? 'Patiente...'
                 : mode === 'signin'

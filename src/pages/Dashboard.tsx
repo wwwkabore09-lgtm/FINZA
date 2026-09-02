@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
 import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
@@ -98,7 +99,7 @@ export function Dashboard() {
   }, [householdId])
 
   if (householdLoading || loading) {
-    return <p className="text-sm text-slate-500">Chargement...</p>
+    return <LoadingState />
   }
 
   if (householdError || error) {

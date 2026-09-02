@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Logo } from '../components/Logo'
 
 const VALUE_PROPS = [
   {
@@ -78,7 +79,7 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <span className="text-xl font-semibold tracking-tight">Finza</span>
+        <Logo />
         <nav className="flex items-center gap-4">
           <Link
             to="/login"

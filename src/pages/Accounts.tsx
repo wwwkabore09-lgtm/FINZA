@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
-import { ACCOUNT_TYPE_LABELS } from '../lib/accountTypes'
+import { ACCOUNT_TYPE_ICONS, ACCOUNT_TYPE_LABELS } from '../lib/accountTypes'
 import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Account, AccountType } from '../types/finance'
@@ -70,7 +71,7 @@ export function Accounts() {
   }
 
   if (householdLoading || loading) {
-    return <p className="text-sm text-slate-500">Chargement...</p>
+    return <LoadingState />
   }
 
   return (
@@ -88,20 +89,28 @@ export function Accounts() {
             <p className="text-sm text-slate-500">Aucun compte pour l'instant.</p>
           ) : (
             <ul className="space-y-3">
-              {accounts.map((account) => (
-                <li
-                  key={account.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{account.name}</p>
-                    <p className="text-xs text-slate-500">{ACCOUNT_TYPE_LABELS[account.type]}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-slate-900">
-                    {formatCurrency(account.balance, account.currency)}
-                  </span>
-                </li>
-              ))}
+              {accounts.map((account) => {
+                const Icon = ACCOUNT_TYPE_ICONS[account.type]
+                return (
+                  <li
+                    key={account.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                        <Icon size={18} strokeWidth={2} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{account.name}</p>
+                        <p className="text-xs text-slate-500">{ACCOUNT_TYPE_LABELS[account.type]}</p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {formatCurrency(account.balance, account.currency)}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
