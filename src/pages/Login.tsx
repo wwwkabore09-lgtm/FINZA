@@ -31,6 +31,7 @@ export function Login() {
               first_name: firstName,
               last_name: lastName,
             },
+            emailRedirectTo: `${window.location.origin}/dashboard`,
           },
         })
         if (signUpError) throw signUpError
