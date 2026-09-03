@@ -28,7 +28,7 @@ const NAV_ITEMS = [
 ]
 
 const MOBILE_MENU_ITEMS = [
-  { to: '/accounts', label: 'Comptes', icon: Wallet },
+  { to: '/transactions', label: 'Transactions', icon: Repeat },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/goals', label: 'Objectifs', icon: Target },
   { to: '/debts', label: 'Dettes', icon: HandCoins },
@@ -186,15 +186,15 @@ export function DashboardLayout() {
           Accueil
         </NavLink>
         <NavLink
-          to="/transactions"
+          to="/accounts"
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
               isActive ? 'text-emerald-700' : 'text-slate-500'
             }`
           }
         >
-          <Repeat size={19} strokeWidth={2} />
-          Transactions
+          <Wallet size={19} strokeWidth={2} />
+          Comptes
         </NavLink>
 
         <div className="flex flex-1 justify-center">
