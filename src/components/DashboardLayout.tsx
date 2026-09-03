@@ -1,4 +1,5 @@
 import {
+  Bell,
   CreditCard,
   HandCoins,
   LayoutDashboard,
@@ -217,6 +218,17 @@ export function DashboardLayout() {
         >
           <User size={19} strokeWidth={2} />
           Profil
+        </NavLink>
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
+              isActive ? 'text-emerald-700' : 'text-slate-500'
+            }`
+          }
+        >
+          <Bell size={19} strokeWidth={2} />
+          Alertes
         </NavLink>
         <button
           type="button"
