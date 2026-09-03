@@ -1,4 +1,4 @@
-import { HandCoins, LayoutDashboard, LogOut, PiggyBank, Repeat, Target, Wallet } from 'lucide-react'
+import { HandCoins, LayoutDashboard, LogOut, PiggyBank, Plus, Repeat, Target, Wallet } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -104,8 +104,8 @@ export function DashboardLayout() {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-slate-200 bg-white sm:hidden">
-        {NAV_ITEMS.map((item) => (
+      <nav className="fixed inset-x-0 bottom-0 z-10 flex items-center border-t border-slate-200 bg-white sm:hidden">
+        {NAV_ITEMS.slice(0, 3).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -117,6 +117,31 @@ export function DashboardLayout() {
           >
             <item.icon size={19} strokeWidth={2} />
             {item.label === 'Tableau de bord' ? 'Accueil' : item.label}
+          </NavLink>
+        ))}
+
+        <div className="flex flex-1 justify-center">
+          <Link
+            to="/transactions"
+            aria-label="Ajouter une transaction"
+            className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
+          >
+            <Plus size={24} strokeWidth={2.5} />
+          </Link>
+        </div>
+
+        {NAV_ITEMS.slice(3).map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
+                isActive ? 'text-emerald-700' : 'text-slate-500'
+              }`
+            }
+          >
+            <item.icon size={19} strokeWidth={2} />
+            {item.label}
           </NavLink>
         ))}
       </nav>
