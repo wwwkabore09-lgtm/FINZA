@@ -31,7 +31,7 @@ const MOBILE_MENU_ITEMS = [
   { to: '/accounts', label: 'Comptes', icon: Wallet },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/goals', label: 'Objectifs', icon: Target },
-  { to: '/profile', label: 'Profil', icon: User },
+  { to: '/debts', label: 'Dettes', icon: HandCoins },
   { to: '/subscription', label: 'Abonnement', icon: CreditCard },
 ]
 
@@ -208,15 +208,15 @@ export function DashboardLayout() {
         </div>
 
         <NavLink
-          to="/debts"
+          to="/profile"
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
               isActive ? 'text-emerald-700' : 'text-slate-500'
             }`
           }
         >
-          <HandCoins size={19} strokeWidth={2} />
-          Dettes
+          <User size={19} strokeWidth={2} />
+          Profil
         </NavLink>
         <button
           type="button"
