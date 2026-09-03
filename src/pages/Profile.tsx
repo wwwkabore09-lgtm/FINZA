@@ -1,4 +1,6 @@
+import { CreditCard } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { translateAuthError } from '../lib/authErrors'
 import { supabase } from '../lib/supabase'
@@ -88,6 +90,14 @@ export function Profile() {
           {submitting ? 'Enregistrement...' : 'Enregistrer'}
         </button>
       </form>
+
+      <Link
+        to="/subscription"
+        className="flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      >
+        <CreditCard size={18} strokeWidth={2} className="text-slate-400" />
+        Gérer mon abonnement
+      </Link>
     </div>
   )
 }
