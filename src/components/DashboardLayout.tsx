@@ -56,7 +56,7 @@ export function DashboardLayout() {
               }`
             }
           >
-            <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-600">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-semibold text-white">
               {initial}
             </span>
             Profil
