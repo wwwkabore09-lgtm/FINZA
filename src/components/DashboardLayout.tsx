@@ -1,5 +1,5 @@
-import { LayoutDashboard, LogOut, PiggyBank, Repeat, Target, Wallet } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { HandCoins, LayoutDashboard, LogOut, PiggyBank, Repeat, Target, Wallet } from 'lucide-react'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { Logo } from './Logo'
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/transactions', label: 'Transactions', icon: Repeat },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/goals', label: 'Objectifs', icon: Target },
+  { to: '/debts', label: 'Dettes', icon: HandCoins },
 ]
 
 export function DashboardLayout() {
@@ -17,6 +18,7 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const firstName = user?.user_metadata?.first_name as string | undefined
   const displayName = firstName || user?.email
+  const initial = (firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -45,14 +47,29 @@ export function DashboardLayout() {
           ))}
         </nav>
 
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="mt-auto flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-        >
-          <LogOut size={18} strokeWidth={2} />
-          Se déconnecter
-        </button>
+        <div className="mt-auto flex flex-col gap-1">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium ${
+                isActive ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+              }`
+            }
+          >
+            <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-600">
+              {initial}
+            </span>
+            Profil
+          </NavLink>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          >
+            <LogOut size={18} strokeWidth={2} />
+            Se déconnecter
+          </button>
+        </div>
       </aside>
 
       <div className="flex-1 pb-16 sm:pb-0">
@@ -63,13 +80,22 @@ export function DashboardLayout() {
           <h1 className="text-base font-semibold text-slate-900 sm:text-lg">
             Bonjour{displayName ? `, ${displayName}` : ''}
           </h1>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="hidden rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:block"
-          >
-            Se déconnecter
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="hidden rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:block"
+            >
+              Se déconnecter
+            </button>
+            <Link
+              to="/profile"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white sm:hidden"
+              aria-label="Profil"
+            >
+              {initial}
+            </Link>
+          </div>
         </header>
 
         <main className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
@@ -84,12 +110,12 @@ export function DashboardLayout() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${
+              `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
                 isActive ? 'text-emerald-700' : 'text-slate-500'
               }`
             }
           >
-            <item.icon size={20} strokeWidth={2} />
+            <item.icon size={19} strokeWidth={2} />
             {item.label === 'Tableau de bord' ? 'Accueil' : item.label}
           </NavLink>
         ))}

@@ -5,9 +5,11 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Accounts } from './pages/Accounts'
 import { Budgets } from './pages/Budgets'
 import { Dashboard } from './pages/Dashboard'
+import { Debts } from './pages/Debts'
 import { Goals } from './pages/Goals'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
+import { Profile } from './pages/Profile'
 import { Transactions } from './pages/Transactions'
 
 function App() {
@@ -29,6 +31,8 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/goals" element={<Goals />} />
+            <Route path="/debts" element={<Debts />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Routes>
       </AuthProvider>

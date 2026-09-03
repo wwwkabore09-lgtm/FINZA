@@ -53,3 +53,16 @@ export interface Goal {
   deadline: string | null
   created_at: string
 }
+
+export type DebtDirection = 'owed_by_me' | 'owed_to_me'
+
+export interface Debt {
+  id: string
+  household_id: string
+  person_name: string
+  direction: DebtDirection
+  amount: number
+  description: string | null
+  settled: boolean
+  created_at: string
+}
