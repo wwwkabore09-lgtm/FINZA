@@ -1,4 +1,18 @@
-import { HandCoins, LayoutDashboard, LogOut, PiggyBank, Plus, Repeat, Target, Wallet } from 'lucide-react'
+import {
+  CreditCard,
+  HandCoins,
+  LayoutDashboard,
+  LogOut,
+  Menu as MenuIcon,
+  PiggyBank,
+  Plus,
+  Repeat,
+  Target,
+  User,
+  Wallet,
+  X,
+} from 'lucide-react'
+import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -13,9 +27,18 @@ const NAV_ITEMS = [
   { to: '/debts', label: 'Dettes', icon: HandCoins },
 ]
 
+const MOBILE_MENU_ITEMS = [
+  { to: '/accounts', label: 'Comptes', icon: Wallet },
+  { to: '/budgets', label: 'Budgets', icon: PiggyBank },
+  { to: '/goals', label: 'Objectifs', icon: Target },
+  { to: '/profile', label: 'Profil', icon: User },
+  { to: '/subscription', label: 'Abonnement', icon: CreditCard },
+]
+
 export function DashboardLayout() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
   const firstName = user?.user_metadata?.first_name as string | undefined
   const displayName = firstName || user?.email
   const initial = (firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
@@ -103,22 +126,76 @@ export function DashboardLayout() {
         </main>
       </div>
 
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-20 sm:hidden">
+          <button
+            type="button"
+            aria-label="Fermer le menu"
+            onClick={() => setMenuOpen(false)}
+            className="absolute inset-0 bg-slate-900/40"
+          />
+          <div className="absolute inset-x-0 bottom-16 rounded-t-2xl border-t border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between px-1 pb-2">
+              <span className="text-sm font-semibold text-slate-900">Menu</span>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Fermer"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex flex-col">
+              {MOBILE_MENU_ITEMS.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <item.icon size={18} strokeWidth={2} className="text-slate-400" />
+                  {item.label}
+                </Link>
+              ))}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50"
+              >
+                <LogOut size={18} strokeWidth={2} className="text-slate-400" />
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-10 flex items-center border-t border-slate-200 bg-white sm:hidden">
-        {NAV_ITEMS.slice(0, 3).map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
-                isActive ? 'text-emerald-700' : 'text-slate-500'
-              }`
-            }
-          >
-            <item.icon size={19} strokeWidth={2} />
-            {item.label === 'Tableau de bord' ? 'Accueil' : item.label}
-          </NavLink>
-        ))}
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
+              isActive ? 'text-emerald-700' : 'text-slate-500'
+            }`
+          }
+        >
+          <LayoutDashboard size={19} strokeWidth={2} />
+          Accueil
+        </NavLink>
+        <NavLink
+          to="/transactions"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
+              isActive ? 'text-emerald-700' : 'text-slate-500'
+            }`
+          }
+        >
+          <Repeat size={19} strokeWidth={2} />
+          Transactions
+        </NavLink>
 
         <div className="flex flex-1 justify-center">
           <Link
@@ -130,20 +207,25 @@ export function DashboardLayout() {
           </Link>
         </div>
 
-        {NAV_ITEMS.slice(3).map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
-                isActive ? 'text-emerald-700' : 'text-slate-500'
-              }`
-            }
-          >
-            <item.icon size={19} strokeWidth={2} />
-            {item.label}
-          </NavLink>
-        ))}
+        <NavLink
+          to="/debts"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
+              isActive ? 'text-emerald-700' : 'text-slate-500'
+            }`
+          }
+        >
+          <HandCoins size={19} strokeWidth={2} />
+          Dettes
+        </NavLink>
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-slate-500"
+        >
+          <MenuIcon size={19} strokeWidth={2} />
+          Menu
+        </button>
       </nav>
     </div>
   )
