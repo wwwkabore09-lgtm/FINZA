@@ -89,7 +89,7 @@ export function DashboardLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
           >
             <LogOut size={18} strokeWidth={2} />
             Se déconnecter
@@ -109,7 +109,7 @@ export function DashboardLayout() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="hidden rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:block"
+              className="hidden rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 sm:block"
             >
               Se déconnecter
             </button>
@@ -166,9 +166,9 @@ export function DashboardLayout() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50"
+                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
               >
-                <LogOut size={18} strokeWidth={2} className="text-slate-400" />
+                <LogOut size={18} strokeWidth={2} />
                 Se déconnecter
               </button>
             </div>
