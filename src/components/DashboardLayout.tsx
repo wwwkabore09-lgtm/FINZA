@@ -33,6 +33,7 @@ const MOBILE_MENU_ITEMS = [
   { to: '/budgets', label: 'Budgets', icon: PiggyBank, color: 'bg-amber-50 text-amber-600' },
   { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
   { to: '/debts', label: 'Dettes', icon: HandCoins, color: 'bg-orange-50 text-orange-600' },
+  { to: '/notifications', label: 'Alertes', icon: Bell, color: 'bg-rose-50 text-rose-600' },
   { to: '/subscription', label: 'Abonnement', icon: CreditCard, color: 'bg-indigo-50 text-indigo-600' },
 ]
 
@@ -220,17 +221,6 @@ export function DashboardLayout() {
         >
           <User size={19} strokeWidth={2} />
           Profil
-        </NavLink>
-        <NavLink
-          to="/notifications"
-          className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
-              isActive ? 'text-emerald-700' : 'text-slate-500'
-            }`
-          }
-        >
-          <Bell size={19} strokeWidth={2} />
-          Alertes
         </NavLink>
         <button
           type="button"
