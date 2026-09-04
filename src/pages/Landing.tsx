@@ -1,5 +1,8 @@
+import { Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import { formatCurrency } from '../lib/format'
+import { PLANS } from '../lib/plans'
 
 const VALUE_PROPS = [
   {
@@ -264,6 +267,36 @@ export function Landing() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Tarifs */}
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">Tarifs</h2>
+            <p className="mt-4 text-slate-600">
+              Les comptes, transactions, budgets et objectifs sont gratuits. Ces formules
+              débloqueront des fonctionnalités supplémentaires bientôt.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-6 sm:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div key={plan.name} className="rounded-2xl border border-slate-200 p-6">
+                <h3 className="text-sm font-semibold text-slate-900">{plan.name}</h3>
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  {formatCurrency(plan.priceXof)}
+                  <span className="text-sm font-medium text-slate-400">/mois</span>
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
+                      <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </section>
 

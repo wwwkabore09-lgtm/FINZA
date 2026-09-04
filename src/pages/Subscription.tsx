@@ -4,26 +4,9 @@ import { useSearchParams } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
 import { formatCurrency } from '../lib/format'
+import { PLANS } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Subscription } from '../types/finance'
-
-const PLANS = [
-  {
-    name: 'Standard',
-    priceXof: 1200,
-    features: ['Budgets par catégorie', 'Suivi des dettes'],
-  },
-  {
-    name: 'Premium',
-    priceXof: 1800,
-    features: ['Tout Standard', 'Objectifs illimités', 'Export de tes données'],
-  },
-  {
-    name: 'Pro Max',
-    priceXof: 3000,
-    features: ['Tout Premium', 'Plusieurs foyers', 'Support prioritaire'],
-  },
-]
 
 export function Subscription() {
   const { householdId, loading: householdLoading } = useHousehold()
