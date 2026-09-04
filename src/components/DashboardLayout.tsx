@@ -29,11 +29,11 @@ const NAV_ITEMS = [
 ]
 
 const MOBILE_MENU_ITEMS = [
-  { to: '/transactions', label: 'Transactions', icon: Repeat },
-  { to: '/budgets', label: 'Budgets', icon: PiggyBank },
-  { to: '/goals', label: 'Objectifs', icon: Target },
-  { to: '/debts', label: 'Dettes', icon: HandCoins },
-  { to: '/subscription', label: 'Abonnement', icon: CreditCard },
+  { to: '/transactions', label: 'Transactions', icon: Repeat, color: 'bg-blue-50 text-blue-600' },
+  { to: '/budgets', label: 'Budgets', icon: PiggyBank, color: 'bg-amber-50 text-amber-600' },
+  { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
+  { to: '/debts', label: 'Dettes', icon: HandCoins, color: 'bg-orange-50 text-orange-600' },
+  { to: '/subscription', label: 'Abonnement', icon: CreditCard, color: 'bg-indigo-50 text-indigo-600' },
 ]
 
 export function DashboardLayout() {
@@ -156,7 +156,9 @@ export function DashboardLayout() {
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  <item.icon size={18} strokeWidth={2} className="text-slate-400" />
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${item.color}`}>
+                    <item.icon size={18} strokeWidth={2} />
+                  </span>
                   {item.label}
                 </Link>
               ))}
