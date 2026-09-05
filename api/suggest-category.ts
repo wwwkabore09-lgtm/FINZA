@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -34,7 +34,9 @@ Réponds uniquement avec le nom exact de la catégorie choisie, sans rien ajoute
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0, maxOutputTokens: 20 },
+        // gemini-3.6-flash spends tokens on internal reasoning before the visible
+        // answer, so the budget must cover that overhead or the response truncates empty.
+        generationConfig: { temperature: 0, maxOutputTokens: 300 },
       }),
     })
 
