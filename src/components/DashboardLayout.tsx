@@ -1,6 +1,5 @@
 import {
   Bell,
-  CreditCard,
   HandCoins,
   LayoutDashboard,
   LogOut,
@@ -34,7 +33,6 @@ const MOBILE_MENU_ITEMS = [
   { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
   { to: '/debts', label: 'Dettes', icon: HandCoins, color: 'bg-orange-50 text-orange-600' },
   { to: '/notifications', label: 'Alertes', icon: Bell, color: 'bg-rose-50 text-rose-600' },
-  { to: '/subscription', label: 'Abonnement', icon: CreditCard, color: 'bg-indigo-50 text-indigo-600' },
 ]
 
 export function DashboardLayout() {

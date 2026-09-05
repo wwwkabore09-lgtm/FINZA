@@ -67,15 +67,3 @@ export interface Debt {
   created_at: string
 }
 
-export type SubscriptionStatus = 'pending' | 'active' | 'cancelled'
-
-export interface Subscription {
-  id: string
-  household_id: string
-  plan: string
-  amount: number
-  status: SubscriptionStatus
-  paydunya_token: string | null
-  created_at: string
-  updated_at: string
-}

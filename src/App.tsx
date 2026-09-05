@@ -11,7 +11,6 @@ import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { Notifications } from './pages/Notifications'
 import { Profile } from './pages/Profile'
-import { Subscription } from './pages/Subscription'
 import { Transactions } from './pages/Transactions'
 
 function App() {
@@ -35,7 +34,6 @@ function App() {
             <Route path="/goals" element={<Goals />} />
             <Route path="/debts" element={<Debts />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/subscription" element={<Subscription />} />
             <Route path="/notifications" element={<Notifications />} />
           </Route>
         </Routes>
