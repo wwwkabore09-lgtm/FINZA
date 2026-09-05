@@ -29,6 +29,8 @@ export function Transactions() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(todayString())
   const [submitting, setSubmitting] = useState(false)
+  const [categoryTouched, setCategoryTouched] = useState(false)
+  const [suggesting, setSuggesting] = useState(false)
 
   useEffect(() => {
     if (!householdId) return
@@ -78,6 +80,35 @@ export function Transactions() {
     }
   }, [householdId])
 
+  useEffect(() => {
+    if (categoryTouched || description.trim().length < 3 || categories.length === 0) return
+
+    const timeout = setTimeout(async () => {
+      setSuggesting(true)
+      try {
+        const response = await fetch('/api/suggest-category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description,
+            categories: categories.map((category) => category.name),
+          }),
+        })
+        const data = (await response.json()) as { category?: string | null }
+        const match = categories.find(
+          (category) => category.name.toLowerCase() === data.category?.toLowerCase(),
+        )
+        if (match) setCategoryId(match.id)
+      } catch {
+        // La suggestion est un confort, pas un blocage : on ignore les erreurs.
+      } finally {
+        setSuggesting(false)
+      }
+    }, 600)
+
+    return () => clearTimeout(timeout)
+  }, [description, categoryTouched, categories])
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!accountId) return
@@ -105,6 +136,7 @@ export function Transactions() {
       setAmount('')
       setDescription('')
       setDate(todayString())
+      setCategoryTouched(false)
     }
     setSubmitting(false)
   }
@@ -218,13 +250,17 @@ export function Transactions() {
           </div>
 
           <div>
-            <label htmlFor="tx-category" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="tx-category" className="flex items-center gap-2 text-sm font-medium text-slate-700">
               Catégorie
+              {suggesting && <span className="text-xs font-normal text-slate-400">Suggestion IA...</span>}
             </label>
             <select
               id="tx-category"
               value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
+              onChange={(event) => {
+                setCategoryTouched(true)
+                setCategoryId(event.target.value)
+              }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {categories.map((category) => (
