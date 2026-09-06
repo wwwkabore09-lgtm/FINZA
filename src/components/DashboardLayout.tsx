@@ -8,6 +8,7 @@ import {
   PiggyBank,
   Plus,
   Repeat,
+  ShieldCheck,
   Target,
   User,
   Wallet,
@@ -16,6 +17,7 @@ import {
 import { Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { isAdminEmail } from '../lib/admin'
 import { supabase } from '../lib/supabase'
 import { Logo } from './Logo'
 import { LoadingState } from './Spinner'
@@ -45,6 +47,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/debts': 'Dettes',
   '/notifications': 'Alertes',
   '/profile': 'Profil',
+  '/admin': 'Administration',
 }
 
 export function DashboardLayout() {
@@ -56,6 +59,13 @@ export function DashboardLayout() {
   const firstName = user?.user_metadata?.first_name as string | undefined
   const displayName = firstName || user?.email
   const initial = (firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
+  const admin = isAdminEmail(user?.email)
+  const mobileMenuItems = admin
+    ? [
+        ...MOBILE_MENU_ITEMS,
+        { to: '/admin', label: 'Administration', icon: ShieldCheck, color: 'bg-slate-100 text-slate-700' },
+      ]
+    : MOBILE_MENU_ITEMS
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -82,6 +92,19 @@ export function DashboardLayout() {
               {item.label}
             </NavLink>
           ))}
+          {admin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 rounded-lg px-3 py-2 ${
+                  isActive ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50'
+                }`
+              }
+            >
+              <ShieldCheck size={18} strokeWidth={2} />
+              Administration
+            </NavLink>
+          )}
         </nav>
 
         <div className="mt-auto flex flex-col gap-1">
@@ -175,7 +198,7 @@ export function DashboardLayout() {
               </button>
             </div>
             <div className="flex flex-col">
-              {MOBILE_MENU_ITEMS.map((item) => (
+              {mobileMenuItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
