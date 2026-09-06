@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { Spinner } from '../components/Spinner'
 import { translateAuthError } from '../lib/authErrors'
+import { COUNTRIES } from '../lib/countries'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup'
@@ -12,6 +13,7 @@ export function Login() {
   const [mode, setMode] = useState<Mode>('signin')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [country, setCountry] = useState<string>(COUNTRIES[0])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +34,7 @@ export function Login() {
             data: {
               first_name: firstName,
               last_name: lastName,
+              country,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -112,6 +115,25 @@ export function Login() {
                     placeholder="Traoré"
                   />
                 </div>
+              </div>
+            )}
+            {mode === 'signup' && (
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-slate-700">
+                  Pays
+                </label>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
             <div>

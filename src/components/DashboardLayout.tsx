@@ -36,6 +36,16 @@ const MOBILE_MENU_ITEMS = [
   { to: '/notifications', label: 'Alertes', icon: Bell, color: 'bg-rose-50 text-rose-600' },
 ]
 
+const PAGE_TITLES: Record<string, string> = {
+  '/accounts': 'Comptes',
+  '/transactions': 'Transactions',
+  '/budgets': 'Budgets',
+  '/goals': 'Objectifs',
+  '/debts': 'Dettes',
+  '/notifications': 'Alertes',
+  '/profile': 'Profil',
+}
+
 export function DashboardLayout() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -115,7 +125,7 @@ export function DashboardLayout() {
             )}
           </div>
           <h1 className="text-base font-semibold text-slate-900 sm:text-lg">
-            Bonjour{displayName ? `, ${displayName}` : ''}
+            {isDashboard ? `Bonjour${displayName ? `, ${displayName}` : ''}` : (PAGE_TITLES[location.pathname] ?? '')}
           </h1>
           <div className="flex items-center gap-3">
             <button

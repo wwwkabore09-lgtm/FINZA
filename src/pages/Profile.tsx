@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { translateAuthError } from '../lib/authErrors'
+import { COUNTRIES } from '../lib/countries'
 import { supabase } from '../lib/supabase'
 
 export function Profile() {
@@ -10,6 +11,9 @@ export function Profile() {
   )
   const [lastName, setLastName] = useState(
     (user?.user_metadata?.last_name as string | undefined) ?? '',
+  )
+  const [country, setCountry] = useState(
+    (user?.user_metadata?.country as string | undefined) ?? COUNTRIES[0],
   )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +26,7 @@ export function Profile() {
     setSaved(false)
 
     const { error: updateError } = await supabase.auth.updateUser({
-      data: { first_name: firstName, last_name: lastName },
+      data: { first_name: firstName, last_name: lastName, country },
     })
 
     if (updateError) {
@@ -71,6 +75,24 @@ export function Profile() {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="profile-country" className="block text-sm font-medium text-slate-700">
+            Pays
+          </label>
+          <select
+            id="profile-country"
+            value={country}
+            onChange={(event) => setCountry(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
 
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

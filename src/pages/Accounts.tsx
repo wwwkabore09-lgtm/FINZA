@@ -1,12 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { LoadingState } from '../components/Spinner'
+import { useAuth } from '../hooks/useAuth'
 import { useHousehold } from '../hooks/useHousehold'
 import { ACCOUNT_TYPE_ICONS, ACCOUNT_TYPE_LABELS } from '../lib/accountTypes'
 import { formatCurrency } from '../lib/format'
+import { getMobileMoneyOperators } from '../lib/mobileMoneyOperators'
 import { supabase } from '../lib/supabase'
 import type { Account, AccountType } from '../types/finance'
 
+const CUSTOM_OPERATOR = '__custom__'
+
 export function Accounts() {
+  const { user } = useAuth()
   const { householdId, loading: householdLoading } = useHousehold()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,6 +21,9 @@ export function Accounts() {
   const [type, setType] = useState<AccountType>('mobile_money')
   const [balance, setBalance] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [useCustomName, setUseCustomName] = useState(false)
+
+  const operators = getMobileMoneyOperators(user?.user_metadata?.country as string | undefined)
 
   useEffect(() => {
     if (!householdId) return
@@ -66,6 +74,7 @@ export function Accounts() {
       setName('')
       setBalance('')
       setType('mobile_money')
+      setUseCustomName(false)
     }
     setSubmitting(false)
   }
@@ -122,27 +131,17 @@ export function Accounts() {
           <h2 className="text-sm font-semibold text-slate-900">Ajouter un compte</h2>
 
           <div className="mt-4">
-            <label htmlFor="account-name" className="block text-sm font-medium text-slate-700">
-              Nom
-            </label>
-            <input
-              id="account-name"
-              required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              placeholder="Orange Money"
-            />
-          </div>
-
-          <div className="mt-4">
             <label htmlFor="account-type" className="block text-sm font-medium text-slate-700">
               Type
             </label>
             <select
               id="account-type"
               value={type}
-              onChange={(event) => setType(event.target.value as AccountType)}
+              onChange={(event) => {
+                setType(event.target.value as AccountType)
+                setName('')
+                setUseCustomName(false)
+              }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
@@ -151,6 +150,59 @@ export function Accounts() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="account-name" className="block text-sm font-medium text-slate-700">
+              Nom
+            </label>
+            {type === 'mobile_money' && !useCustomName ? (
+              <select
+                id="account-name"
+                required
+                value={name}
+                onChange={(event) => {
+                  if (event.target.value === CUSTOM_OPERATOR) {
+                    setUseCustomName(true)
+                    setName('')
+                  } else {
+                    setName(event.target.value)
+                  }
+                }}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="" disabled>
+                  Choisis un opérateur
+                </option>
+                {operators.map((operator) => (
+                  <option key={operator} value={operator}>
+                    {operator}
+                  </option>
+                ))}
+                <option value={CUSTOM_OPERATOR}>Autre (préciser)</option>
+              </select>
+            ) : (
+              <input
+                id="account-name"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder={type === 'mobile_money' ? "Nom de l'opérateur" : 'Compte courant'}
+              />
+            )}
+            {type === 'mobile_money' && useCustomName && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomName(false)
+                  setName('')
+                }}
+                className="mt-1 text-xs font-medium text-emerald-600 hover:underline"
+              >
+                Choisir dans la liste
+              </button>
+            )}
           </div>
 
           <div className="mt-4">
