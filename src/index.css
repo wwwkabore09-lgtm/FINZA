@@ -6,3 +6,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* iOS Safari auto-zooms on focus when an input's font is under 16px;
+   our form fields use text-sm (14px), so force 16px below the sm breakpoint. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

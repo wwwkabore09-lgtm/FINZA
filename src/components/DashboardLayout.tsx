@@ -13,11 +13,12 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { Logo } from './Logo'
+import { LoadingState } from './Spinner'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -146,7 +147,9 @@ export function DashboardLayout() {
         </header>
 
         <main className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-          <Outlet />
+          <Suspense fallback={<LoadingState />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

@@ -1,17 +1,25 @@
+import { lazy } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { DashboardLayout } from './components/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import { Accounts } from './pages/Accounts'
-import { Budgets } from './pages/Budgets'
-import { Dashboard } from './pages/Dashboard'
-import { Debts } from './pages/Debts'
-import { Goals } from './pages/Goals'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
-import { Notifications } from './pages/Notifications'
-import { Profile } from './pages/Profile'
-import { Transactions } from './pages/Transactions'
+
+// Lazy-loaded: only fetched once a user is authenticated, keeping the public
+// landing/login bundle small for first-time visitors on mobile data.
+const Accounts = lazy(() => import('./pages/Accounts').then((m) => ({ default: m.Accounts })))
+const Budgets = lazy(() => import('./pages/Budgets').then((m) => ({ default: m.Budgets })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
+const Debts = lazy(() => import('./pages/Debts').then((m) => ({ default: m.Debts })))
+const Goals = lazy(() => import('./pages/Goals').then((m) => ({ default: m.Goals })))
+const Notifications = lazy(() =>
+  import('./pages/Notifications').then((m) => ({ default: m.Notifications })),
+)
+const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })))
+const Transactions = lazy(() =>
+  import('./pages/Transactions').then((m) => ({ default: m.Transactions })),
+)
 
 function App() {
   return (
