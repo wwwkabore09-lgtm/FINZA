@@ -108,19 +108,20 @@ export function DashboardLayout() {
         </nav>
 
         <div className="mt-auto flex flex-col gap-1">
-          <NavLink
+          <Link
             to="/profile"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium ${
-                isActive ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-              }`
-            }
+            className="mb-1 flex items-center gap-2.5 rounded-lg p-2 hover:bg-slate-50"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-semibold text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
               {initial}
             </span>
-            Profil
-          </NavLink>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-slate-900">{displayName}</span>
+              <span className="mt-0.5 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                Plan Gratuit
+              </span>
+            </span>
+          </Link>
           <button
             type="button"
             onClick={handleSignOut}
@@ -197,6 +198,21 @@ export function DashboardLayout() {
                 <X size={18} />
               </button>
             </div>
+            <Link
+              to="/profile"
+              onClick={() => setMenuOpen(false)}
+              className="mb-2 flex items-center gap-3 rounded-lg bg-slate-50 p-3"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                {initial}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-slate-900">{displayName}</span>
+                <span className="mt-0.5 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                  Plan Gratuit
+                </span>
+              </span>
+            </Link>
             <div className="flex flex-col">
               {mobileMenuItems.map((item) => (
                 <Link
