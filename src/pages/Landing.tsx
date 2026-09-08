@@ -1,37 +1,23 @@
-import {
-  Lock,
-  PiggyBank,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  Users,
-  Wallet,
-  X,
-} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 
 const VALUE_PROPS = [
   {
-    icon: Wallet,
     title: 'Une vue unique',
     description:
       'Mobile Money, comptes bancaires et espèces réunis dans un seul tableau de bord, en temps réel. Fini les allers-retours entre trois applications pour savoir combien il te reste.',
   },
   {
-    icon: PiggyBank,
     title: 'Des budgets clairs',
     description:
       "Suis tes dépenses par catégorie et sache toujours où en est ton budget du mois, sans tableur ni calculs à la main.",
   },
   {
-    icon: Target,
     title: 'Des objectifs atteignables',
     description:
       "Définis des objectifs d'épargne pour ton foyer et visualise ta progression au fil du temps, pas à pas.",
   },
   {
-    icon: Users,
     title: 'Pensé pour le foyer',
     description:
       "Un compte 'foyer' partagé entre les membres de ta famille, avec des données visibles uniquement par les personnes que tu ajoutes.",
@@ -92,91 +78,48 @@ const FAQ = [
 export function Landing() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <header className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Logo />
-          <nav className="flex items-center gap-4">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              Connexion
-            </Link>
-            <Link
-              to="/login"
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-            >
-              Commencer
-            </Link>
-          </nav>
-        </div>
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <Logo />
+        <nav className="flex items-center gap-4">
+          <Link
+            to="/login"
+            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+          >
+            Connexion
+          </Link>
+          <Link
+            to="/login"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            Commencer
+          </Link>
+        </nav>
       </header>
 
       <main>
         {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/70 via-white to-white">
-          <div className="mx-auto max-w-4xl px-6 py-20 text-center sm:py-28">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-              <Sparkles size={14} strokeWidth={2} />
-              Gratuit · Pensé pour l'Afrique francophone
-            </span>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 sm:text-6xl">
-              Ton argent. Ta vision. Ton contrôle.
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
-              Finza est le Financial OS personnel et familial pensé pour l'Afrique
-              francophone. Consolide Mobile Money, comptes bancaires et espèces
-              dans une seule application, et reprends le contrôle de tes finances.
-            </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                to="/login"
-                className="w-full rounded-lg bg-emerald-600 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-700 sm:w-auto"
-              >
-                Créer mon compte
-              </Link>
-              <Link
-                to="/login"
-                className="w-full rounded-lg border border-slate-300 px-8 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
-              >
-                J'ai déjà un compte
-              </Link>
-            </div>
-
-            {/* Aperçu produit */}
-            <div className="mx-auto mt-16 max-w-md rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xl shadow-slate-200/50">
-              <p className="text-xs font-medium text-slate-400">Solde total</p>
-              <p className="mt-1 text-3xl font-bold text-slate-900">248 500 XOF</p>
-              <div className="mt-5 space-y-2.5">
-                <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-sm text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                      <Wallet size={14} strokeWidth={2} />
-                    </span>
-                    Orange Money
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900">86 000 XOF</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-sm text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                      <Wallet size={14} strokeWidth={2} />
-                    </span>
-                    Compte bancaire
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900">142 500 XOF</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-sm text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <Wallet size={14} strokeWidth={2} />
-                    </span>
-                    Espèces
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900">20 000 XOF</span>
-                </div>
-              </div>
-            </div>
+        <section className="mx-auto max-w-4xl px-6 py-20 text-center sm:py-28">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-6xl">
+            Ton argent. Ta vision. Ton contrôle.
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+            Finza est le Financial OS personnel et familial pensé pour l'Afrique
+            francophone. Consolide Mobile Money, comptes bancaires et espèces
+            dans une seule application, et reprends le contrôle de tes finances.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link
+              to="/login"
+              className="w-full rounded-lg bg-emerald-600 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-700 sm:w-auto"
+            >
+              Créer mon compte
+            </Link>
+            <Link
+              to="/login"
+              className="w-full rounded-lg border border-slate-300 px-8 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
+            >
+              J'ai déjà un compte
+            </Link>
           </div>
         </section>
 
@@ -198,9 +141,7 @@ export function Landing() {
                   key={problem}
                   className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
-                    <X size={12} strokeWidth={2.5} />
-                  </span>
+                  <span className="mt-0.5 text-red-500">✕</span>
                   <p className="text-sm text-slate-700">{problem}</p>
                 </div>
               ))}
@@ -219,16 +160,13 @@ export function Landing() {
               utilisée au quotidien, même depuis ton téléphone.
             </p>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+          <div className="mt-12 grid gap-8 sm:grid-cols-2">
             {VALUE_PROPS.map((prop) => (
               <div
                 key={prop.title}
-                className="rounded-2xl border border-slate-200 p-6 text-left transition-colors hover:border-emerald-200 hover:bg-emerald-50/30"
+                className="rounded-2xl border border-slate-200 p-6 text-left"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                  <prop.icon size={20} strokeWidth={2} />
-                </span>
-                <h3 className="mt-4 text-lg font-semibold text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900">
                   {prop.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -283,33 +221,23 @@ export function Landing() {
               </p>
             </div>
             <div className="grid gap-4">
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                  <ShieldCheck size={18} strokeWidth={2} />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Accès par foyer
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Chaque foyer a ses propres données, isolées des autres
-                    utilisateurs.
-                  </p>
-                </div>
+              <div className="rounded-xl border border-slate-200 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  Accès par foyer
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Chaque foyer a ses propres données, isolées des autres
+                  utilisateurs.
+                </p>
               </div>
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                  <Lock size={18} strokeWidth={2} />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Authentification sécurisée
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Connexion protégée par email et mot de passe, gérée par
-                    Supabase.
-                  </p>
-                </div>
+              <div className="rounded-xl border border-slate-200 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  Authentification sécurisée
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Connexion protégée par email et mot de passe, gérée par
+                  Supabase.
+                </p>
               </div>
             </div>
           </div>
