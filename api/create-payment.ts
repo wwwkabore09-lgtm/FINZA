@@ -93,6 +93,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: data.detail ?? data.message ?? 'Erreur SasPay',
       saspayStatus: saspayResponse.status,
       saspayBody: rawText.slice(0, 500),
+      // Diagnostic only, never the full key: confirms whether the env var
+      // Vercel is actually using matches what was configured.
+      keyDebug: {
+        length: secretKey.length,
+        prefix: secretKey.slice(0, 12),
+        suffix: secretKey.slice(-6),
+      },
     })
     return
   }
