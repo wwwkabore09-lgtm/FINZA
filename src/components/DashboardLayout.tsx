@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bell,
+  CreditCard,
   HandCoins,
   LayoutDashboard,
   LogOut,
@@ -17,6 +18,7 @@ import {
 import { Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { isAdminEmail } from '../lib/admin'
 import { supabase } from '../lib/supabase'
 import { Logo } from './Logo'
@@ -37,6 +39,7 @@ const MOBILE_MENU_ITEMS = [
   { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
   { to: '/debts', label: 'Dettes', icon: HandCoins, color: 'bg-orange-50 text-orange-600' },
   { to: '/notifications', label: 'Alertes', icon: Bell, color: 'bg-rose-50 text-rose-600' },
+  { to: '/subscription', label: 'Abonnement', icon: CreditCard, color: 'bg-indigo-50 text-indigo-600' },
 ]
 
 const PAGE_TITLES: Record<string, string> = {
@@ -47,6 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/debts': 'Dettes',
   '/notifications': 'Alertes',
   '/profile': 'Profil',
+  '/subscription': 'Abonnement',
   '/admin': 'Administration',
 }
 
@@ -60,6 +64,7 @@ export function DashboardLayout() {
   const displayName = firstName || user?.email
   const initial = (firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
   const admin = isAdminEmail(user?.email)
+  const plan = useSubscriptionPlan()
   const mobileMenuItems = admin
     ? [
         ...MOBILE_MENU_ITEMS,
@@ -118,7 +123,7 @@ export function DashboardLayout() {
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-slate-900">{displayName}</span>
               <span className="mt-0.5 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                Plan Gratuit
+                Plan {plan}
               </span>
             </span>
           </Link>
@@ -209,7 +214,7 @@ export function DashboardLayout() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-slate-900">{displayName}</span>
                 <span className="mt-0.5 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                  Plan Gratuit
+                  Plan {plan}
                 </span>
               </span>
             </Link>

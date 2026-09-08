@@ -18,6 +18,9 @@ const Notifications = lazy(() =>
   import('./pages/Notifications').then((m) => ({ default: m.Notifications })),
 )
 const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })))
+const Subscription = lazy(() =>
+  import('./pages/Subscription').then((m) => ({ default: m.Subscription })),
+)
 const Transactions = lazy(() =>
   import('./pages/Transactions').then((m) => ({ default: m.Transactions })),
 )
@@ -43,6 +46,7 @@ function App() {
             <Route path="/goals" element={<Goals />} />
             <Route path="/debts" element={<Debts />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/admin" element={<Admin />} />
           </Route>
