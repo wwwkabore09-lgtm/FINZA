@@ -141,8 +141,8 @@ export function DashboardLayout() {
             ) : (
               <button
                 type="button"
-                onClick={() => navigate('/dashboard')}
-                aria-label="Retour au tableau de bord"
+                onClick={() => navigate(-1)}
+                aria-label="Retour"
                 className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
               >
                 <ArrowLeft size={20} strokeWidth={2} />
