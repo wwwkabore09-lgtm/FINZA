@@ -38,7 +38,7 @@ Donne une seule observation courte (une phrase, maximum 25 mots), utile et concr
         contents: [{ parts: [{ text: prompt }] }],
         // gemini-3.6-flash spends part of the token budget on internal
         // reasoning before the visible answer (see suggest-category.ts).
-        generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 600 },
       }),
     })
 
