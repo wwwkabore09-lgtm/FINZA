@@ -47,11 +47,9 @@ Donne une seule observation courte (une phrase, maximum 25 mots), utile et concr
       return
     }
 
-    const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[]
-    }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-    res.status(200).json({ insight: text || null })
+    const rawText = await response.text()
+    res.status(200).json({ debug: rawText.slice(0, 2000) })
+    return
   } catch {
     res.status(200).json({ insight: null })
   }
