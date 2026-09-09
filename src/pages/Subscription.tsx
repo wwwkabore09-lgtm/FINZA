@@ -129,7 +129,7 @@ export function Subscription() {
           returnUrl,
           country,
           customerEmail: user?.email,
-          customerName: [firstName, lastName].filter(Boolean).join(' ') || undefined,
+          customerName: [firstName, lastName].filter(Boolean).join(' ') || user?.email,
         }),
       })
       const data = (await response.json()) as { checkoutUrl?: string; sessionId?: string; error?: string }
