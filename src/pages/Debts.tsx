@@ -238,7 +238,6 @@ export function Debts() {
               value={personName}
               onChange={(event) => setPersonName(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              placeholder="Aïcha"
             />
           </div>
 
