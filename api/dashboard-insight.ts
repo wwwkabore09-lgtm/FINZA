@@ -59,16 +59,25 @@ Identifie la tendance la plus intéressante (sans calculer de pourcentage exact,
     }
 
     const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[]
+      candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[]
     }
-    const rawAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    const rawAnswer = parts.map((p) => p.text ?? '').join('')
     if (!rawAnswer) {
-      res.status(200).json({ insight: null })
+      res.status(200).json({
+        insight: null,
+        debugPartsCount: parts.length,
+        debugFinishReason: data.candidates?.[0]?.finishReason,
+      })
       return
     }
 
-    const parsed = JSON.parse(rawAnswer) as { insight?: string }
-    res.status(200).json({ insight: parsed.insight?.trim() || null })
+    try {
+      const parsed = JSON.parse(rawAnswer) as { insight?: string }
+      res.status(200).json({ insight: parsed.insight?.trim() || null })
+    } catch {
+      res.status(200).json({ insight: null, debugUnparsable: rawAnswer.slice(0, 500) })
+    }
   } catch {
     res.status(200).json({ insight: null })
   }
