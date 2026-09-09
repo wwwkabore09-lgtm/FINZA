@@ -27,8 +27,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     const rawText = await response.text()
-    res.status(200).json({ debug: rawText.slice(0, 800), httpStatus: response.status })
-    return
+    const parsed = JSON.parse(rawText) as {
+      success?: boolean
+      data?: { status?: string; paid_at?: string | null }
+    }
+
+    if (!response.ok || !parsed.success) {
+      res.status(502).json({ error: 'Erreur SasPay' })
+      return
+    }
+
+    // Rely on paid_at rather than guessing every possible success status string.
+    const status = parsed.data?.paid_at
+      ? 'completed'
+      : parsed.data?.status === 'PENDING'
+        ? 'pending'
+        : 'failed'
+    res.status(200).json({ status })
   } catch {
     res.status(502).json({ error: 'Impossible de contacter SasPay' })
   }
