@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -10,6 +11,20 @@ interface TransactionRow extends Transaction {
   accounts: { name: string } | null
 }
 
+interface CategoryExpenseRow {
+  amount: number
+  categories: { name: string } | null
+}
+
+function aggregateByCategory(rows: CategoryExpenseRow[]): Record<string, number> {
+  const totals: Record<string, number> = {}
+  for (const row of rows) {
+    const name = row.categories?.name ?? 'Autre'
+    totals[name] = (totals[name] ?? 0) + Math.abs(row.amount)
+  }
+  return totals
+}
+
 export function Dashboard() {
   const { householdId, loading: householdLoading, error: householdError } = useHousehold()
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -18,6 +33,7 @@ export function Dashboard() {
   const [monthlyExpenses, setMonthlyExpenses] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [insight, setInsight] = useState<string | null>(null)
 
   useEffect(() => {
     if (!householdId) return
@@ -47,13 +63,19 @@ export function Dashboard() {
 
         let recentTransactions: TransactionRow[] = []
         let expensesThisMonth = 0
+        let currentMonthByCategory: Record<string, number> = {}
+        let previousMonthByCategory: Record<string, number> = {}
 
         if (accountIds.length > 0) {
           const monthStart = new Date()
           monthStart.setDate(1)
           const monthStartStr = monthStart.toISOString().slice(0, 10)
 
-          const [recentRes, monthRes] = await Promise.all([
+          const prevMonthStart = new Date(monthStart)
+          prevMonthStart.setMonth(prevMonthStart.getMonth() - 1)
+          const prevMonthStartStr = prevMonthStart.toISOString().slice(0, 10)
+
+          const [recentRes, monthRes, prevMonthRes] = await Promise.all([
             supabase
               .from('transactions')
               .select('*, accounts(name)')
@@ -62,19 +84,28 @@ export function Dashboard() {
               .limit(5),
             supabase
               .from('transactions')
-              .select('amount')
+              .select('amount, categories(name)')
               .in('account_id', accountIds)
               .gte('date', monthStartStr)
+              .lt('amount', 0),
+            supabase
+              .from('transactions')
+              .select('amount, categories(name)')
+              .in('account_id', accountIds)
+              .gte('date', prevMonthStartStr)
+              .lt('date', monthStartStr)
               .lt('amount', 0),
           ])
           if (recentRes.error) throw recentRes.error
           if (monthRes.error) throw monthRes.error
+          if (prevMonthRes.error) throw prevMonthRes.error
 
           recentTransactions = (recentRes.data ?? []) as unknown as TransactionRow[]
-          expensesThisMonth = ((monthRes.data ?? []) as { amount: number }[]).reduce(
-            (sum, t) => sum + Math.abs(t.amount),
-            0,
-          )
+          const currentRows = (monthRes.data ?? []) as unknown as CategoryExpenseRow[]
+          const prevRows = (prevMonthRes.data ?? []) as unknown as CategoryExpenseRow[]
+          expensesThisMonth = currentRows.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+          currentMonthByCategory = aggregateByCategory(currentRows)
+          previousMonthByCategory = aggregateByCategory(prevRows)
         }
 
         if (!cancelled) {
@@ -82,6 +113,24 @@ export function Dashboard() {
           setGoals((goalsRes.data ?? []) as Goal[])
           setTransactions(recentTransactions)
           setMonthlyExpenses(expensesThisMonth)
+        }
+
+        if (!cancelled && Object.keys(currentMonthByCategory).length > 0) {
+          fetch('/api/dashboard-insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentMonth: currentMonthByCategory,
+              previousMonth: previousMonthByCategory,
+            }),
+          })
+            .then((res) => res.json())
+            .then((data: { insight?: string | null }) => {
+              if (!cancelled) setInsight(data.insight ?? null)
+            })
+            .catch(() => {
+              if (!cancelled) setInsight(null)
+            })
         }
       } catch {
         if (!cancelled) {
@@ -114,6 +163,15 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {insight && (
+        <section className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <Sparkles size={16} strokeWidth={2} />
+          </span>
+          <p className="text-sm text-emerald-900">{insight}</p>
+        </section>
+      )}
+
       <section className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Solde total</p>
