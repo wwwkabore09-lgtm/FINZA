@@ -53,17 +53,23 @@ Identifie la tendance la plus intéressante (sans calculer de pourcentage exact,
       }),
     })
 
-    const rawText = await response.text()
     if (!response.ok) {
-      res.status(200).json({ insight: null, debugStatus: response.status, debugBody: rawText.slice(0, 1000) })
+      res.status(200).json({ insight: null })
       return
     }
 
-    res.status(200).json({ debugRaw: rawText.slice(0, 2000) })
-  } catch (err) {
-    res.status(200).json({
-      insight: null,
-      debugCatch: err instanceof Error ? err.message : String(err),
-    })
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[]
+    }
+    const rawAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!rawAnswer) {
+      res.status(200).json({ insight: null })
+      return
+    }
+
+    const parsed = JSON.parse(rawAnswer) as { insight?: string }
+    res.status(200).json({ insight: parsed.insight?.trim() || null })
+  } catch {
+    res.status(200).json({ insight: null })
   }
 }
