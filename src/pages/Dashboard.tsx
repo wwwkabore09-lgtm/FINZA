@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
-import { ACCOUNT_TYPE_ICONS } from '../lib/accountTypes'
 import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Account, Goal, Transaction } from '../types/finance'
@@ -293,62 +292,35 @@ export function Dashboard() {
           </Link>
         </section>
       ) : (
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">Mes comptes</h2>
-              <Link to="/accounts" className="text-sm text-emerald-600 hover:text-emerald-700">
-                Voir tout
-              </Link>
-            </div>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-slate-900">Transactions récentes</h2>
+            <Link to="/transactions" className="text-sm text-emerald-600 hover:text-emerald-700">
+              Voir tout
+            </Link>
+          </div>
+          {transactions.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">Aucune transaction pour l'instant.</p>
+          ) : (
             <ul className="mt-4 space-y-3">
-              {accounts.map((account) => {
-                const Icon = ACCOUNT_TYPE_ICONS[account.type]
-                return (
-                  <li key={account.id} className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                      <Icon size={16} strokeWidth={2} />
-                    </span>
-                    <span className="flex-1 text-sm text-slate-700">{account.name}</span>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {formatCurrency(account.balance, account.currency)}
-                    </span>
-                  </li>
-                )
-              })}
+              {transactions.map((transaction) => (
+                <li key={transaction.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    {transaction.description || transaction.accounts?.name}
+                  </span>
+                  <span
+                    className={
+                      transaction.amount < 0
+                        ? 'font-medium text-red-600'
+                        : 'font-medium text-emerald-600'
+                    }
+                  >
+                    {formatCurrency(transaction.amount)}
+                  </span>
+                </li>
+              ))}
             </ul>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">Transactions récentes</h2>
-              <Link to="/transactions" className="text-sm text-emerald-600 hover:text-emerald-700">
-                Voir tout
-              </Link>
-            </div>
-            {transactions.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">Aucune transaction pour l'instant.</p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {transactions.map((transaction) => (
-                  <li key={transaction.id} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600">
-                      {transaction.description || transaction.accounts?.name}
-                    </span>
-                    <span
-                      className={
-                        transaction.amount < 0
-                          ? 'font-medium text-red-600'
-                          : 'font-medium text-emerald-600'
-                      }
-                    >
-                      {formatCurrency(transaction.amount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          )}
         </section>
       )}
 

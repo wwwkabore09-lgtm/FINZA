@@ -10,6 +10,7 @@ import { Login } from './pages/Login'
 // landing/login bundle small for first-time visitors on mobile data.
 const Accounts = lazy(() => import('./pages/Accounts').then((m) => ({ default: m.Accounts })))
 const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
+const Assistant = lazy(() => import('./pages/Assistant').then((m) => ({ default: m.Assistant })))
 const Budgets = lazy(() => import('./pages/Budgets').then((m) => ({ default: m.Budgets })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const Debts = lazy(() => import('./pages/Debts').then((m) => ({ default: m.Debts })))
@@ -40,6 +41,7 @@ function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/assistant" element={<Assistant />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budgets" element={<Budgets />} />
