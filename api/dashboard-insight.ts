@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const prompt = `Voici les dépenses par catégorie d'un utilisateur, en Franc CFA (XOF).
 Ce mois-ci : ${JSON.stringify(currentMonth)}
 Le mois dernier : ${JSON.stringify(previousMonth ?? {})}
-Donne une seule observation courte (une phrase, maximum 25 mots), utile et concrète, en français, sur une tendance ou un conseil budgétaire. Pas de markdown, pas de guillemets, juste la phrase.`
+Identifie la tendance la plus intéressante (sans calculer de pourcentage exact, reste qualitatif : "a augmenté", "a beaucoup baissé", etc.) et donne un conseil ou une observation courte et utile, en français, maximum 20 mots.`
 
   try {
     const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
@@ -36,9 +36,20 @@ Donne une seule observation courte (une phrase, maximum 25 mots), utile et concr
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        // gemini-3.6-flash spends part of the token budget on internal
-        // reasoning before the visible answer (see suggest-category.ts).
-        generationConfig: { temperature: 0.3, maxOutputTokens: 600 },
+        generationConfig: {
+          temperature: 0.3,
+          // gemini-3.6-flash spends part of the budget on internal reasoning
+          // (and, for numeric prompts, visible scratch arithmetic) before the
+          // final answer - structured output keeps it constrained to the
+          // schema instead of writing out its working in plain text.
+          maxOutputTokens: 1000,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: { insight: { type: 'STRING' } },
+            required: ['insight'],
+          },
+        },
       }),
     })
 
@@ -47,9 +58,17 @@ Donne une seule observation courte (une phrase, maximum 25 mots), utile et concr
       return
     }
 
-    const rawText = await response.text()
-    res.status(200).json({ debug: rawText.slice(0, 2000) })
-    return
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[]
+    }
+    const rawAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!rawAnswer) {
+      res.status(200).json({ insight: null })
+      return
+    }
+
+    const parsed = JSON.parse(rawAnswer) as { insight?: string }
+    res.status(200).json({ insight: parsed.insight?.trim() || null })
   } catch {
     res.status(200).json({ insight: null })
   }
