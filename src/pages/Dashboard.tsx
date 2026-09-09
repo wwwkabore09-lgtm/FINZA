@@ -1,8 +1,17 @@
-import { Sparkles } from 'lucide-react'
+import {
+  ArrowDownRight,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Target,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { ACCOUNT_TYPE_ICONS } from '../lib/accountTypes'
 import { formatCurrency } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Account, Goal, Transaction } from '../types/finance'
@@ -19,6 +28,7 @@ interface CategoryExpenseRow {
 function aggregateByCategory(rows: CategoryExpenseRow[]): Record<string, number> {
   const totals: Record<string, number> = {}
   for (const row of rows) {
+    if (row.amount >= 0) continue
     const name = row.categories?.name ?? 'Autre'
     totals[name] = (totals[name] ?? 0) + Math.abs(row.amount)
   }
@@ -31,9 +41,13 @@ export function Dashboard() {
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
   const [monthlyExpenses, setMonthlyExpenses] = useState(0)
+  const [previousMonthExpenses, setPreviousMonthExpenses] = useState(0)
+  const [balancePercentChange, setBalancePercentChange] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [insight, setInsight] = useState<string | null>(null)
+  const [balanceHidden, setBalanceHidden] = useState(false)
+  const [updatedAt] = useState(() => new Date())
 
   useEffect(() => {
     if (!householdId) return
@@ -60,9 +74,12 @@ export function Dashboard() {
 
         const accountList = (accountsRes.data ?? []) as Account[]
         const accountIds = accountList.map((account) => account.id)
+        const totalBalance = accountList.reduce((sum, account) => sum + account.balance, 0)
 
         let recentTransactions: TransactionRow[] = []
         let expensesThisMonth = 0
+        let expensesLastMonth = 0
+        let balanceChangePercent: number | null = null
         let currentMonthByCategory: Record<string, number> = {}
         let previousMonthByCategory: Record<string, number> = {}
 
@@ -75,7 +92,7 @@ export function Dashboard() {
           prevMonthStart.setMonth(prevMonthStart.getMonth() - 1)
           const prevMonthStartStr = prevMonthStart.toISOString().slice(0, 10)
 
-          const [recentRes, monthRes, prevMonthRes] = await Promise.all([
+          const [recentRes, currentMonthRes, prevMonthRes] = await Promise.all([
             supabase
               .from('transactions')
               .select('*, accounts(name)')
@@ -86,26 +103,36 @@ export function Dashboard() {
               .from('transactions')
               .select('amount, categories(name)')
               .in('account_id', accountIds)
-              .gte('date', monthStartStr)
-              .lt('amount', 0),
+              .gte('date', monthStartStr),
             supabase
               .from('transactions')
               .select('amount, categories(name)')
               .in('account_id', accountIds)
               .gte('date', prevMonthStartStr)
-              .lt('date', monthStartStr)
-              .lt('amount', 0),
+              .lt('date', monthStartStr),
           ])
           if (recentRes.error) throw recentRes.error
-          if (monthRes.error) throw monthRes.error
+          if (currentMonthRes.error) throw currentMonthRes.error
           if (prevMonthRes.error) throw prevMonthRes.error
 
           recentTransactions = (recentRes.data ?? []) as unknown as TransactionRow[]
-          const currentRows = (monthRes.data ?? []) as unknown as CategoryExpenseRow[]
+          const currentRows = (currentMonthRes.data ?? []) as unknown as CategoryExpenseRow[]
           const prevRows = (prevMonthRes.data ?? []) as unknown as CategoryExpenseRow[]
-          expensesThisMonth = currentRows.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+          expensesThisMonth = currentRows
+            .filter((t) => t.amount < 0)
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+          expensesLastMonth = prevRows
+            .filter((t) => t.amount < 0)
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0)
           currentMonthByCategory = aggregateByCategory(currentRows)
           previousMonthByCategory = aggregateByCategory(prevRows)
+
+          const netChangeThisMonth = currentRows.reduce((sum, t) => sum + t.amount, 0)
+          const startOfMonthBalance = totalBalance - netChangeThisMonth
+          if (startOfMonthBalance !== 0) {
+            balanceChangePercent = (netChangeThisMonth / Math.abs(startOfMonthBalance)) * 100
+          }
         }
 
         if (!cancelled) {
@@ -113,6 +140,8 @@ export function Dashboard() {
           setGoals((goalsRes.data ?? []) as Goal[])
           setTransactions(recentTransactions)
           setMonthlyExpenses(expensesThisMonth)
+          setPreviousMonthExpenses(expensesLastMonth)
+          setBalancePercentChange(balanceChangePercent)
         }
 
         if (!cancelled && Object.keys(currentMonthByCategory).length > 0) {
@@ -160,34 +189,93 @@ export function Dashboard() {
   }
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0)
+  const expensePercentChange =
+    previousMonthExpenses > 0
+      ? ((monthlyExpenses - previousMonthExpenses) / previousMonthExpenses) * 100
+      : null
+  const goalsOnTrack = goals.filter(
+    (goal) => goal.target_amount > 0 && goal.current_amount / goal.target_amount >= 0.5,
+  ).length
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {insight && (
         <section className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <Sparkles size={16} strokeWidth={2} />
           </span>
-          <p className="text-sm text-emerald-900">{insight}</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Observation de Finza
+            </p>
+            <p className="mt-0.5 text-sm text-emerald-900">{insight}</p>
+          </div>
         </section>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Solde total</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">
-            {formatCurrency(totalBalance)}
+      {/* Solde total */}
+      <section className="relative overflow-hidden rounded-2xl bg-emerald-600 p-6 text-white shadow-lg shadow-emerald-600/20">
+        <div className="flex items-start justify-between">
+          <p className="text-sm text-emerald-100">Solde total</p>
+          <button
+            type="button"
+            onClick={() => setBalanceHidden((current) => !current)}
+            className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white hover:bg-white/25"
+          >
+            {balanceHidden ? <Eye size={14} strokeWidth={2} /> : <EyeOff size={14} strokeWidth={2} />}
+            {balanceHidden ? 'Afficher' : 'Masquer'}
+          </button>
+        </div>
+        <p className="mt-2 text-3xl font-bold sm:text-4xl">
+          {balanceHidden ? '•••••••' : formatCurrency(totalBalance)}
+        </p>
+        {balancePercentChange !== null && !balanceHidden && (
+          <p
+            className={`mt-2 flex items-center gap-1 text-sm font-medium ${
+              balancePercentChange >= 0 ? 'text-emerald-100' : 'text-rose-100'
+            }`}
+          >
+            {balancePercentChange >= 0 ? (
+              <TrendingUp size={16} strokeWidth={2} />
+            ) : (
+              <TrendingDown size={16} strokeWidth={2} />
+            )}
+            {balancePercentChange >= 0 ? '+' : ''}
+            {balancePercentChange.toFixed(1)}% ce mois-ci
           </p>
+        )}
+        <div className="mt-4 flex items-center justify-between border-t border-white/20 pt-3 text-xs text-emerald-100">
+          <span>
+            Mis à jour aujourd'hui à{' '}
+            {updatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 font-medium">XOF</span>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+            <ArrowDownRight size={18} strokeWidth={2} />
+          </span>
+          <p className="mt-3 text-sm text-slate-500">Dépenses du mois</p>
+          <p className="mt-1 text-xl font-bold text-slate-900">{formatCurrency(monthlyExpenses)}</p>
+          {expensePercentChange !== null && (
+            <p className={`mt-1 text-xs font-medium ${expensePercentChange > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+              {expensePercentChange > 0 ? '+' : ''}
+              {expensePercentChange.toFixed(1)}% vs mois dernier
+            </p>
+          )}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Dépenses du mois</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">
-            {formatCurrency(monthlyExpenses)}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Objectifs actifs</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">{goals.length}</p>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+            <Target size={18} strokeWidth={2} />
+          </span>
+          <p className="mt-3 text-sm text-slate-500">Objectifs actifs</p>
+          <p className="mt-1 text-xl font-bold text-slate-900">{goals.length}</p>
+          {goals.length > 0 && (
+            <p className="mt-1 text-xs font-medium text-slate-500">{goalsOnTrack} en bonne voie</p>
+          )}
         </div>
       </section>
 
@@ -208,20 +296,26 @@ export function Dashboard() {
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">Comptes</h2>
+              <h2 className="text-base font-semibold text-slate-900">Mes comptes</h2>
               <Link to="/accounts" className="text-sm text-emerald-600 hover:text-emerald-700">
                 Voir tout
               </Link>
             </div>
             <ul className="mt-4 space-y-3">
-              {accounts.map((account) => (
-                <li key={account.id} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{account.name}</span>
-                  <span className="font-medium text-slate-900">
-                    {formatCurrency(account.balance, account.currency)}
-                  </span>
-                </li>
-              ))}
+              {accounts.map((account) => {
+                const Icon = ACCOUNT_TYPE_ICONS[account.type]
+                return (
+                  <li key={account.id} className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <Icon size={16} strokeWidth={2} />
+                    </span>
+                    <span className="flex-1 text-sm text-slate-700">{account.name}</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {formatCurrency(account.balance, account.currency)}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
