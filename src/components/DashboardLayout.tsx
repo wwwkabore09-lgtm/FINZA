@@ -276,8 +276,8 @@ export function DashboardLayout() {
 
         <div className="flex flex-1 justify-center">
           <Link
-            to="/transactions"
-            aria-label="Ajouter une transaction"
+            to="/assistant"
+            aria-label="Assistant"
             className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
           >
             <Plus size={24} strokeWidth={2.5} />
