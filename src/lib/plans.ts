@@ -21,16 +21,17 @@ export interface PlanLimits {
   budgetsEnabled: boolean
   debtsEnabled: boolean
   maxGoals: number | null
+  exportEnabled: boolean
 }
 
 // null = illimité. Le plan Gratuit reste utilisable (comptes, transactions,
-// 1 objectif) mais budgets/dettes et les objectifs multiples sont réservés
-// aux forfaits payants, pour que payer débloque vraiment quelque chose.
+// 1 objectif) mais budgets/dettes, l'export et les objectifs multiples sont
+// réservés aux forfaits payants, pour que payer débloque vraiment quelque chose.
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  Gratuit: { maxAccounts: 2, budgetsEnabled: false, debtsEnabled: false, maxGoals: 1 },
-  Standard: { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: 1 },
-  Premium: { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: null },
-  'Pro Max': { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: null },
+  Gratuit: { maxAccounts: 2, budgetsEnabled: false, debtsEnabled: false, maxGoals: 1, exportEnabled: false },
+  Standard: { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: 1, exportEnabled: false },
+  Premium: { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: null, exportEnabled: true },
+  'Pro Max': { maxAccounts: null, budgetsEnabled: true, debtsEnabled: true, maxGoals: null, exportEnabled: true },
 }
 
 export function getPlanLimits(plan: string): PlanLimits {

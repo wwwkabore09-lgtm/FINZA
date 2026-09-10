@@ -1,7 +1,11 @@
+import { Download, Lock } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { formatCurrency } from '../lib/format'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Account, Category, Transaction } from '../types/finance'
 
@@ -14,8 +18,33 @@ function todayString(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+function exportTransactionsCsv(transactions: TransactionRow[]) {
+  const headers = ['Date', 'Compte', 'Catégorie', 'Description', 'Montant (XOF)']
+  const rows = transactions.map((t) => [
+    t.date,
+    t.accounts?.name ?? '',
+    t.categories?.name ?? '',
+    t.description ?? '',
+    String(t.amount),
+  ])
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob([`﻿${csvContent}`], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `finza-transactions-${todayString()}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 export function Transactions() {
   const { householdId, loading: householdLoading } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { exportEnabled } = getPlanLimits(plan)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
@@ -167,6 +196,28 @@ export function Transactions() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">Historique</h2>
+            {exportEnabled ? (
+              <button
+                type="button"
+                onClick={() => exportTransactionsCsv(transactions)}
+                disabled={transactions.length === 0}
+                className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Download size={14} strokeWidth={2} />
+                Exporter (CSV)
+              </button>
+            ) : (
+              <Link
+                to="/subscription"
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600"
+              >
+                <Lock size={12} strokeWidth={2} />
+                Export (Premium)
+              </Link>
+            )}
+          </div>
           {transactions.length === 0 ? (
             <p className="text-sm text-slate-500">Aucune transaction pour l'instant.</p>
           ) : (
