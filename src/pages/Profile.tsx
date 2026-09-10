@@ -1,6 +1,7 @@
 import { CreditCard } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { HouseholdSwitcher } from '../components/HouseholdSwitcher'
 import { useAuth } from '../hooks/useAuth'
 import { translateAuthError } from '../lib/authErrors'
 import { COUNTRIES } from '../lib/countries'
@@ -112,6 +113,8 @@ export function Profile() {
           {submitting ? 'Enregistrement...' : 'Enregistrer'}
         </button>
       </form>
+
+      <HouseholdSwitcher />
 
       <Link
         to="/subscription"

@@ -1,33 +1,51 @@
-import { useEffect, useState } from 'react'
-import { getOrCreateHousehold } from '../lib/household'
+import { useCallback, useEffect, useState } from 'react'
+import { getOrCreateHousehold, listUserHouseholds, type HouseholdSummary } from '../lib/household'
 import { useAuth } from './useAuth'
+
+function storageKey(userId: string): string {
+  return `finza_current_household_${userId}`
+}
 
 export function useHousehold() {
   const { user } = useAuth()
-  const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [householdId, setHouseholdIdState] = useState<string | null>(null)
+  const [households, setHouseholds] = useState<HouseholdSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return
-    let cancelled = false
-
     setLoading(true)
-    getOrCreateHousehold(user.id)
-      .then((id) => {
-        if (!cancelled) setHouseholdId(id)
-      })
-      .catch(() => {
-        if (!cancelled) setError("Impossible de charger ton foyer. Réessaie dans un instant.")
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    setError(null)
+    try {
+      let list = await listUserHouseholds(user.id)
+      if (list.length === 0) {
+        await getOrCreateHousehold(user.id)
+        list = await listUserHouseholds(user.id)
+      }
+      setHouseholds(list)
 
-    return () => {
-      cancelled = true
+      const stored = localStorage.getItem(storageKey(user.id))
+      const stillValid = list.find((h) => h.id === stored)
+      const next = stillValid?.id ?? list[0]?.id ?? null
+      setHouseholdIdState(next)
+      if (next) localStorage.setItem(storageKey(user.id), next)
+    } catch {
+      setError("Impossible de charger ton foyer. Réessaie dans un instant.")
+    } finally {
+      setLoading(false)
     }
   }, [user])
 
-  return { householdId, loading, error }
+  useEffect(() => {
+    load()
+  }, [load])
+
+  function switchHousehold(id: string) {
+    if (!user) return
+    setHouseholdIdState(id)
+    localStorage.setItem(storageKey(user.id), id)
+  }
+
+  return { householdId, households, loading, error, switchHousehold, refresh: load }
 }
