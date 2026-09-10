@@ -1,12 +1,18 @@
+import { Lock } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { formatCurrency } from '../lib/format'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Goal } from '../types/finance'
 
 export function Goals() {
   const { householdId, loading: householdLoading } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { maxGoals } = getPlanLimits(plan)
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +50,10 @@ export function Goals() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!householdId) return
+    if (maxGoals !== null && goals.length >= maxGoals) {
+      setError("Limite d'objectifs atteinte pour ton forfait. Passe à un forfait supérieur pour en créer davantage.")
+      return
+    }
     setSubmitting(true)
     setError(null)
 
@@ -96,6 +106,8 @@ export function Goals() {
   if (householdLoading || loading) {
     return <LoadingState />
   }
+
+  const limitReached = maxGoals !== null && goals.length >= maxGoals
 
   return (
     <div className="space-y-8">
@@ -160,6 +172,22 @@ export function Goals() {
           )}
         </div>
 
+        {limitReached ? (
+          <div className="h-fit rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center">
+            <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <Lock size={16} strokeWidth={2} />
+            </span>
+            <p className="mt-3 text-sm text-slate-600">
+              Tu as atteint la limite de {maxGoals} objectif{maxGoals && maxGoals > 1 ? 's' : ''} de ton forfait.
+            </p>
+            <Link
+              to="/subscription"
+              className="mt-3 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              Voir les forfaits
+            </Link>
+          </div>
+        ) : (
         <form
           onSubmit={handleSubmit}
           className="h-fit space-y-4 rounded-2xl border border-slate-200 bg-white p-5"
@@ -221,6 +249,7 @@ export function Goals() {
             {submitting ? 'Création...' : "Créer l'objectif"}
           </button>
         </form>
+        )}
       </div>
     </div>
   )

@@ -1,10 +1,14 @@
+import { Lock } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useAuth } from '../hooks/useAuth'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { ACCOUNT_TYPE_ICONS, ACCOUNT_TYPE_LABELS } from '../lib/accountTypes'
 import { formatCurrency } from '../lib/format'
 import { getMobileMoneyOperators } from '../lib/mobileMoneyOperators'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Account, AccountType } from '../types/finance'
 
@@ -13,6 +17,8 @@ const CUSTOM_OPERATOR = '__custom__'
 export function Accounts() {
   const { user } = useAuth()
   const { householdId, loading: householdLoading } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { maxAccounts } = getPlanLimits(plan)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -52,6 +58,10 @@ export function Accounts() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!householdId) return
+    if (maxAccounts !== null && accounts.length >= maxAccounts) {
+      setError("Limite de comptes atteinte pour ton forfait. Passe à un forfait supérieur pour en ajouter davantage.")
+      return
+    }
     setSubmitting(true)
     setError(null)
 
@@ -82,6 +92,8 @@ export function Accounts() {
   if (householdLoading || loading) {
     return <LoadingState />
   }
+
+  const limitReached = maxAccounts !== null && accounts.length >= maxAccounts
 
   return (
     <div className="space-y-8">
@@ -124,6 +136,22 @@ export function Accounts() {
           )}
         </div>
 
+        {limitReached ? (
+          <div className="h-fit rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center">
+            <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <Lock size={16} strokeWidth={2} />
+            </span>
+            <p className="mt-3 text-sm text-slate-600">
+              Tu as atteint la limite de {maxAccounts} comptes de ton forfait.
+            </p>
+            <Link
+              to="/subscription"
+              className="mt-3 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              Voir les forfaits
+            </Link>
+          </div>
+        ) : (
         <form
           onSubmit={handleSubmit}
           className="h-fit rounded-2xl border border-slate-200 bg-white p-5"
@@ -231,6 +259,7 @@ export function Accounts() {
             {submitting ? 'Ajout...' : 'Ajouter'}
           </button>
         </form>
+        )}
       </div>
     </div>
   )

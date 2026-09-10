@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { PlanLock } from '../components/PlanLock'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { getCategoryIcon } from '../lib/categoryIcons'
 import { formatCurrency } from '../lib/format'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Category } from '../types/finance'
 
@@ -15,6 +18,8 @@ interface CategoryBudget {
 
 export function Budgets() {
   const { householdId, loading: householdLoading } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { budgetsEnabled } = getPlanLimits(plan)
   const [rows, setRows] = useState<CategoryBudget[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -132,6 +137,13 @@ export function Budgets() {
         </p>
       </div>
 
+      {!budgetsEnabled ? (
+        <PlanLock
+          title="Budgets réservés aux forfaits payants"
+          message="Passe au forfait Standard ou plus pour fixer un budget par catégorie et suivre tes dépenses."
+        />
+      ) : (
+      <>
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <p className="text-sm text-slate-500">Budget mensuel</p>
         <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -201,6 +213,8 @@ export function Budgets() {
           })}
         </ul>
       </div>
+      </>
+      )}
     </div>
   )
 }

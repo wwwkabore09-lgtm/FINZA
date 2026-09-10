@@ -1,12 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { PlanLock } from '../components/PlanLock'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { formatCurrency } from '../lib/format'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Debt, DebtDirection } from '../types/finance'
 
 export function Debts() {
   const { householdId, loading: householdLoading } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { debtsEnabled } = getPlanLimits(plan)
   const [debts, setDebts] = useState<Debt[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -105,6 +110,12 @@ export function Debts() {
         </p>
       </div>
 
+      {!debtsEnabled ? (
+        <PlanLock
+          title="Suivi des dettes réservé aux forfaits payants"
+          message="Passe au forfait Standard ou plus pour garder une trace de ce que tu dois et de ce qu'on te doit."
+        />
+      ) : (
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -283,6 +294,7 @@ export function Debts() {
           </button>
         </form>
       </div>
+      )}
     </div>
   )
 }
