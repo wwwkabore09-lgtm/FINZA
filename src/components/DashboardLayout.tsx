@@ -36,7 +36,7 @@ const NAV_ITEMS = [
 ]
 
 const MOBILE_MENU_ITEMS = [
-  { to: '/profile', label: 'Profil', icon: User, color: 'bg-slate-100 text-slate-700' },
+  { to: '/assistant', label: 'Assistant', icon: Bot, color: 'bg-teal-50 text-teal-600' },
   { to: '/transactions', label: 'Transactions', icon: Repeat, color: 'bg-blue-50 text-blue-600' },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank, color: 'bg-amber-50 text-amber-600' },
   { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
@@ -285,15 +285,15 @@ export function DashboardLayout() {
         </div>
 
         <NavLink
-          to="/assistant"
+          to="/profile"
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium ${
               isActive ? 'text-emerald-700' : 'text-slate-500'
             }`
           }
         >
-          <Bot size={19} strokeWidth={2} />
-          Assistant
+          <User size={19} strokeWidth={2} />
+          Profil
         </NavLink>
         <button
           type="button"
