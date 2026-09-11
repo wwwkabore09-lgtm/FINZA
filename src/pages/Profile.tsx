@@ -1,4 +1,4 @@
-import { CreditCard } from 'lucide-react'
+import { CreditCard, FileText, Shield } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -144,6 +144,23 @@ export function Profile() {
         <CreditCard size={18} strokeWidth={2} className="text-slate-400" />
         Gérer mon abonnement
       </Link>
+
+      <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <Link
+          to="/confidentialite"
+          className="flex items-center gap-2.5 p-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Shield size={18} strokeWidth={2} className="text-slate-400" />
+          Politique de confidentialité
+        </Link>
+        <Link
+          to="/conditions"
+          className="flex items-center gap-2.5 p-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <FileText size={18} strokeWidth={2} className="text-slate-400" />
+          Conditions générales d'utilisation
+        </Link>
+      </div>
 
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
         <h2 className="text-sm font-semibold text-red-900">Zone dangereuse</h2>
