@@ -143,9 +143,8 @@ export function Subscription() {
         .eq('id', pending.id)
 
       window.location.href = data.checkoutUrl
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : JSON.stringify(err)
-      setError(`Impossible de démarrer le paiement. Réessaie. (Détail: ${detail})`)
+    } catch {
+      setError('Impossible de démarrer le paiement. Réessaie.')
       setPayingPlan(null)
     }
   }
