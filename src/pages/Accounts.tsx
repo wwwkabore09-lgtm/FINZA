@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react'
+import { Lock, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -28,6 +28,12 @@ export function Accounts() {
   const [balance, setBalance] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [useCustomName, setUseCustomName] = useState(false)
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState<AccountType>('mobile_money')
+  const [editBalance, setEditBalance] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
 
   const operators = getMobileMoneyOperators(user?.user_metadata?.country as string | undefined)
 
@@ -89,6 +95,50 @@ export function Accounts() {
     setSubmitting(false)
   }
 
+  function startEdit(account: Account) {
+    setEditingId(account.id)
+    setEditName(account.name)
+    setEditType(account.type)
+    setEditBalance(String(account.balance))
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+  }
+
+  async function handleEditSubmit(event: FormEvent, accountId: string) {
+    event.preventDefault()
+    setEditSubmitting(true)
+    setError(null)
+
+    const { data, error: updateError } = await supabase
+      .from('accounts')
+      .update({ name: editName, type: editType, balance: Number(editBalance) || 0 })
+      .eq('id', accountId)
+      .select('*')
+      .single()
+
+    if (updateError) {
+      setError('Impossible de modifier ce compte. Réessaie.')
+    } else if (data) {
+      setAccounts((current) => current.map((a) => (a.id === accountId ? (data as Account) : a)))
+      setEditingId(null)
+    }
+    setEditSubmitting(false)
+  }
+
+  async function handleDelete(accountId: string) {
+    if (!confirm('Supprimer ce compte ? Toutes ses transactions seront également supprimées.')) {
+      return
+    }
+    const { error: deleteError } = await supabase.from('accounts').delete().eq('id', accountId)
+    if (deleteError) {
+      setError('Impossible de supprimer ce compte.')
+      return
+    }
+    setAccounts((current) => current.filter((a) => a.id !== accountId))
+  }
+
   if (householdLoading || loading) {
     return <LoadingState />
   }
@@ -112,6 +162,59 @@ export function Accounts() {
             <ul className="space-y-3">
               {accounts.map((account) => {
                 const Icon = ACCOUNT_TYPE_ICONS[account.type]
+
+                if (editingId === account.id) {
+                  return (
+                    <li key={account.id} className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4">
+                      <form onSubmit={(event) => handleEditSubmit(event, account.id)} className="space-y-3">
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <select
+                            value={editType}
+                            onChange={(event) => setEditType(event.target.value as AccountType)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          >
+                            {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            required
+                            value={editName}
+                            onChange={(event) => setEditName(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="Nom"
+                          />
+                          <input
+                            type="number"
+                            value={editBalance}
+                            onChange={(event) => setEditBalance(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="Solde"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={editSubmitting}
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                          >
+                            {editSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </form>
+                    </li>
+                  )
+                }
+
                 return (
                   <li
                     key={account.id}
@@ -126,9 +229,27 @@ export function Accounts() {
                         <p className="text-xs text-slate-500">{ACCOUNT_TYPE_LABELS[account.type]}</p>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {formatCurrency(account.balance, account.currency)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-slate-900">
+                        {formatCurrency(account.balance, account.currency)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(account)}
+                        aria-label="Modifier"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      >
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(account.id)}
+                        aria-label="Supprimer"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                    </div>
                   </li>
                 )
               })}

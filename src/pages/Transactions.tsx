@@ -1,4 +1,4 @@
-import { Download, Lock } from 'lucide-react'
+import { Download, Lock, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -60,6 +60,15 @@ export function Transactions() {
   const [submitting, setSubmitting] = useState(false)
   const [categoryTouched, setCategoryTouched] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editAccountId, setEditAccountId] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState('')
+  const [editKind, setEditKind] = useState<'expense' | 'income'>('expense')
+  const [editAmount, setEditAmount] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
 
   useEffect(() => {
     if (!householdId) return
@@ -170,6 +179,61 @@ export function Transactions() {
     setSubmitting(false)
   }
 
+  function startEdit(transaction: TransactionRow) {
+    setEditingId(transaction.id)
+    setEditAccountId(transaction.account_id)
+    setEditCategoryId(transaction.category_id ?? '')
+    setEditKind(transaction.amount < 0 ? 'expense' : 'income')
+    setEditAmount(String(Math.abs(transaction.amount)))
+    setEditDescription(transaction.description)
+    setEditDate(transaction.date)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+  }
+
+  async function handleEditSubmit(event: FormEvent, transactionId: string) {
+    event.preventDefault()
+    setEditSubmitting(true)
+    setError(null)
+
+    const signedAmount = editKind === 'expense' ? -Math.abs(Number(editAmount)) : Math.abs(Number(editAmount))
+
+    const { data, error: updateError } = await supabase
+      .from('transactions')
+      .update({
+        account_id: editAccountId,
+        category_id: editCategoryId || null,
+        amount: signedAmount,
+        description: editDescription,
+        date: editDate,
+      })
+      .eq('id', transactionId)
+      .select('*, accounts(name), categories(name)')
+      .single()
+
+    if (updateError) {
+      setError('Impossible de modifier cette transaction. Réessaie.')
+    } else if (data) {
+      setTransactions((current) =>
+        current.map((t) => (t.id === transactionId ? (data as unknown as TransactionRow) : t)),
+      )
+      setEditingId(null)
+    }
+    setEditSubmitting(false)
+  }
+
+  async function handleDelete(transactionId: string) {
+    if (!confirm('Supprimer cette transaction ?')) return
+    const { error: deleteError } = await supabase.from('transactions').delete().eq('id', transactionId)
+    if (deleteError) {
+      setError('Impossible de supprimer cette transaction.')
+      return
+    }
+    setTransactions((current) => current.filter((t) => t.id !== transactionId))
+  }
+
   if (householdLoading || loading) {
     return <LoadingState />
   }
@@ -222,31 +286,145 @@ export function Transactions() {
             <p className="text-sm text-slate-500">Aucune transaction pour l'instant.</p>
           ) : (
             <ul className="space-y-3">
-              {transactions.map((transaction) => (
-                <li
-                  key={transaction.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {transaction.description || transaction.categories?.name || 'Transaction'}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {transaction.accounts?.name} · {transaction.categories?.name ?? 'Sans catégorie'} ·{' '}
-                      {transaction.date}
-                    </p>
-                  </div>
-                  <span
-                    className={
-                      transaction.amount < 0
-                        ? 'text-sm font-semibold text-red-600'
-                        : 'text-sm font-semibold text-emerald-600'
-                    }
+              {transactions.map((transaction) => {
+                if (editingId === transaction.id) {
+                  return (
+                    <li key={transaction.id} className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4">
+                      <form onSubmit={(event) => handleEditSubmit(event, transaction.id)} className="space-y-3">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditKind('expense')}
+                            className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                              editKind === 'expense'
+                                ? 'border-red-300 bg-red-50 text-red-700'
+                                : 'border-slate-300 text-slate-600'
+                            }`}
+                          >
+                            Dépense
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditKind('income')}
+                            className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                              editKind === 'income'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-slate-300 text-slate-600'
+                            }`}
+                          >
+                            Revenu
+                          </button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <select
+                            value={editAccountId}
+                            onChange={(event) => setEditAccountId(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          >
+                            {accounts.map((account) => (
+                              <option key={account.id} value={account.id}>
+                                {account.name}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={editCategoryId}
+                            onChange={(event) => setEditCategoryId(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          >
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min="0"
+                            required
+                            value={editAmount}
+                            onChange={(event) => setEditAmount(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            placeholder="Montant"
+                          />
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(event) => setEditDate(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                          <input
+                            value={editDescription}
+                            onChange={(event) => setEditDescription(event.target.value)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:col-span-2"
+                            placeholder="Description"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={editSubmitting}
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                          >
+                            {editSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </form>
+                    </li>
+                  )
+                }
+
+                return (
+                  <li
+                    key={transaction.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3"
                   >
-                    {formatCurrency(transaction.amount)}
-                  </span>
-                </li>
-              ))}
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {transaction.description || transaction.categories?.name || 'Transaction'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {transaction.accounts?.name} · {transaction.categories?.name ?? 'Sans catégorie'} ·{' '}
+                        {transaction.date}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={
+                          transaction.amount < 0
+                            ? 'text-sm font-semibold text-red-600'
+                            : 'text-sm font-semibold text-emerald-600'
+                        }
+                      >
+                        {formatCurrency(transaction.amount)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(transaction)}
+                        aria-label="Modifier"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      >
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(transaction.id)}
+                        aria-label="Supprimer"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

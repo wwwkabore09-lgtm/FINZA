@@ -321,7 +321,15 @@ export function Landing() {
       </main>
 
       <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-        © {new Date().getFullYear()} Finza. Fait pour l'Afrique francophone.
+        <p>© {new Date().getFullYear()} Finza. Fait pour l'Afrique francophone.</p>
+        <div className="mt-2 flex items-center justify-center gap-4">
+          <Link to="/confidentialite" className="hover:text-slate-700 hover:underline">
+            Confidentialité
+          </Link>
+          <Link to="/conditions" className="hover:text-slate-700 hover:underline">
+            CGU
+          </Link>
+        </div>
       </footer>
     </div>
   )

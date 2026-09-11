@@ -246,6 +246,20 @@ export function Login() {
             {mode === 'signin' ? "S'inscrire" : 'Se connecter'}
           </button>
         </p>
+
+        {mode === 'signup' && (
+          <p className="mt-3 text-center text-xs text-slate-400">
+            En créant un compte, tu acceptes les{' '}
+            <Link to="/conditions" className="underline hover:text-slate-600">
+              conditions d'utilisation
+            </Link>{' '}
+            et la{' '}
+            <Link to="/confidentialite" className="underline hover:text-slate-600">
+              politique de confidentialité
+            </Link>
+            .
+          </p>
+        )}
       </div>
     </div>
   )

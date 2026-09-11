@@ -5,6 +5,8 @@ import { DashboardLayout } from './components/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
+import { Privacy } from './pages/Privacy'
+import { Terms } from './pages/Terms'
 
 // Lazy-loaded: only fetched once a user is authenticated, keeping the public
 // landing/login bundle small for first-time visitors on mobile data.
@@ -33,6 +35,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/confidentialite" element={<Privacy />} />
+          <Route path="/conditions" element={<Terms />} />
           <Route
             element={
               <ProtectedRoute>

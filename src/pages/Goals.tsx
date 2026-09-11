@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react'
+import { Lock, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -22,6 +22,12 @@ export function Goals() {
   const [deadline, setDeadline] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [addAmounts, setAddAmounts] = useState<Record<string, string>>({})
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editTarget, setEditTarget] = useState('')
+  const [editDeadline, setEditDeadline] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
 
   useEffect(() => {
     if (!householdId) return
@@ -103,6 +109,52 @@ export function Goals() {
     }
   }
 
+  function startEdit(goal: Goal) {
+    setEditingId(goal.id)
+    setEditName(goal.name)
+    setEditTarget(String(goal.target_amount))
+    setEditDeadline(goal.deadline ?? '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+  }
+
+  async function handleEditSubmit(event: FormEvent, goalId: string) {
+    event.preventDefault()
+    setEditSubmitting(true)
+    setError(null)
+
+    const { data, error: updateError } = await supabase
+      .from('goals')
+      .update({
+        name: editName,
+        target_amount: Number(editTarget) || 0,
+        deadline: editDeadline || null,
+      })
+      .eq('id', goalId)
+      .select('*')
+      .single()
+
+    if (updateError) {
+      setError('Impossible de modifier cet objectif. Réessaie.')
+    } else if (data) {
+      setGoals((current) => current.map((g) => (g.id === goalId ? (data as Goal) : g)))
+      setEditingId(null)
+    }
+    setEditSubmitting(false)
+  }
+
+  async function handleDelete(goalId: string) {
+    if (!confirm('Supprimer cet objectif ?')) return
+    const { error: deleteError } = await supabase.from('goals').delete().eq('id', goalId)
+    if (deleteError) {
+      setError('Impossible de supprimer cet objectif.')
+      return
+    }
+    setGoals((current) => current.filter((g) => g.id !== goalId))
+  }
+
   if (householdLoading || loading) {
     return <LoadingState />
   }
@@ -126,6 +178,55 @@ export function Goals() {
             </div>
           ) : (
             goals.map((goal) => {
+              if (editingId === goal.id) {
+                return (
+                  <div key={goal.id} className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
+                    <form onSubmit={(event) => handleEditSubmit(event, goal.id)} className="space-y-3">
+                      <input
+                        required
+                        value={editName}
+                        onChange={(event) => setEditName(event.target.value)}
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        placeholder="Nom"
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={editTarget}
+                          onChange={(event) => setEditTarget(event.target.value)}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          placeholder="Montant cible"
+                        />
+                        <input
+                          type="date"
+                          value={editDeadline}
+                          onChange={(event) => setEditDeadline(event.target.value)}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={editSubmitting}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                        >
+                          {editSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )
+              }
+
               const progress = Math.min(
                 100,
                 Math.round((goal.current_amount / goal.target_amount) * 100),
@@ -134,9 +235,27 @@ export function Goals() {
                 <div key={goal.id} className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium text-slate-900">{goal.name}</span>
-                    <span className="text-slate-500">
-                      {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-500">
+                        {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(goal)}
+                        aria-label="Modifier"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      >
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(goal.id)}
+                        aria-label="Supprimer"
+                        className="rounded-full p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
                     <div
