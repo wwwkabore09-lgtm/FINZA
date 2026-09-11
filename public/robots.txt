@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /assistant
+Disallow: /accounts
+Disallow: /transactions
+Disallow: /budgets
+Disallow: /goals
+Disallow: /debts
+Disallow: /profile
+Disallow: /subscription
+Disallow: /notifications
+Disallow: /admin
+
+Sitemap: https://finza.credit/sitemap.xml
