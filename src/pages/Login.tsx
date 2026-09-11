@@ -19,6 +19,9 @@ export function Login() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [confirmationSent, setConfirmationSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [resent, setResent] = useState(false)
 
   async function handleGoogleSignIn() {
     setError(null)
@@ -66,6 +69,41 @@ export function Login() {
       setError(translateAuthError(err))
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleVerifyCode(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    setVerifying(true)
+
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'signup',
+      })
+      if (verifyError) throw verifyError
+      if (data.session) {
+        navigate('/dashboard')
+      } else {
+        throw new Error('Session introuvable')
+      }
+    } catch (err) {
+      setError(translateAuthError(err))
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  async function handleResendCode() {
+    setError(null)
+    setResent(false)
+    const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
+    if (resendError) {
+      setError(translateAuthError(resendError))
+    } else {
+      setResent(true)
     }
   }
 
@@ -117,9 +155,56 @@ export function Login() {
         </div>
 
         {confirmationSent ? (
-          <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
-            Vérifie ta boîte mail pour confirmer ton inscription.
-          </p>
+          <div className="mt-4 space-y-4">
+            <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+              Un code à 6 chiffres a été envoyé à {email}. Saisis-le ci-dessous pour confirmer
+              ton compte.
+            </p>
+            <form onSubmit={handleVerifyCode} className="space-y-4">
+              <div>
+                <label htmlFor="otp-code" className="block text-sm font-medium text-slate-700">
+                  Code de confirmation
+                </label>
+                <input
+                  id="otp-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  required
+                  value={otpCode}
+                  onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ''))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.5em] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="000000"
+                />
+              </div>
+
+              {error && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+              )}
+              {resent && (
+                <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+                  Un nouveau code a été envoyé.
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={verifying || otpCode.length !== 6}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {verifying && <Spinner className="border-white/40 border-t-white" />}
+                {verifying ? 'Vérification...' : 'Confirmer'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendCode}
+                className="w-full text-center text-sm font-medium text-emerald-600 hover:text-emerald-700"
+              >
+                Renvoyer le code
+              </button>
+            </form>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             {mode === 'signup' && (
@@ -240,6 +325,8 @@ export function Login() {
               setMode(mode === 'signin' ? 'signup' : 'signin')
               setError(null)
               setConfirmationSent(false)
+              setOtpCode('')
+              setResent(false)
             }}
             className="font-medium text-emerald-600 hover:text-emerald-700"
           >
