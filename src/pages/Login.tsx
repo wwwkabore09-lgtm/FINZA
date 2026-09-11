@@ -157,8 +157,8 @@ export function Login() {
         {confirmationSent ? (
           <div className="mt-4 space-y-4">
             <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
-              Un code à 6 chiffres a été envoyé à {email}. Saisis-le ci-dessous pour confirmer
-              ton compte.
+              Un code de confirmation a été envoyé à {email}. Saisis-le ci-dessous pour
+              confirmer ton compte.
             </p>
             <form onSubmit={handleVerifyCode} className="space-y-4">
               <div>
@@ -169,12 +169,12 @@ export function Login() {
                   id="otp-code"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={8}
                   required
                   value={otpCode}
                   onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ''))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.5em] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="000000"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.3em] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="00000000"
                 />
               </div>
 
@@ -189,7 +189,7 @@ export function Login() {
 
               <button
                 type="submit"
-                disabled={verifying || otpCode.length !== 6}
+                disabled={verifying || otpCode.length < 6}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
                 {verifying && <Spinner className="border-white/40 border-t-white" />}
