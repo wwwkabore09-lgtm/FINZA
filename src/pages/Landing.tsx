@@ -329,6 +329,14 @@ export function Landing() {
           <Link to="/conditions" className="hover:text-slate-700 hover:underline">
             CGU
           </Link>
+          <a
+            href="https://wa.me/22667155784"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-700 hover:underline"
+          >
+            Nous contacter
+          </a>
         </div>
       </footer>
     </div>

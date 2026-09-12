@@ -1,4 +1,4 @@
-import { CreditCard, FileText, Shield } from 'lucide-react'
+import { CreditCard, FileText, MessageCircle, Shield } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -207,6 +207,16 @@ export function Profile() {
           {changingPassword ? 'Enregistrement...' : 'Mettre à jour'}
         </button>
       </form>
+
+      <a
+        href="https://wa.me/22667155784"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      >
+        <MessageCircle size={18} strokeWidth={2} className="text-slate-400" />
+        Nous contacter sur WhatsApp
+      </a>
 
       <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <Link
