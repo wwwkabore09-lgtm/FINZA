@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, PiggyBank, Target, Users, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { formatCurrency } from '../lib/format'
@@ -9,21 +9,29 @@ const VALUE_PROPS = [
     title: 'Une vue unique',
     description:
       'Mobile Money, comptes bancaires et espèces réunis dans un seul tableau de bord, en temps réel. Fini les allers-retours entre trois applications pour savoir combien il te reste.',
+    icon: Wallet,
+    color: 'bg-emerald-50 text-emerald-600',
   },
   {
     title: 'Des budgets clairs',
     description:
       "Suis tes dépenses par catégorie et sache toujours où en est ton budget du mois, sans tableur ni calculs à la main.",
+    icon: PiggyBank,
+    color: 'bg-amber-50 text-amber-600',
   },
   {
     title: 'Des objectifs atteignables',
     description:
       "Définis des objectifs d'épargne pour ton foyer et visualise ta progression au fil du temps, pas à pas.",
+    icon: Target,
+    color: 'bg-violet-50 text-violet-600',
   },
   {
     title: 'Pensé pour le foyer',
     description:
       "Un compte 'foyer' partagé entre les membres de ta famille, avec des données visibles uniquement par les personnes que tu ajoutes.",
+    icon: Users,
+    color: 'bg-blue-50 text-blue-600',
   },
 ]
 
@@ -169,7 +177,10 @@ export function Landing() {
                 key={prop.title}
                 className="rounded-2xl border border-slate-200 p-6 text-left"
               >
-                <h3 className="text-lg font-semibold text-slate-900">
+                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${prop.color}`}>
+                  <prop.icon size={22} strokeWidth={2} />
+                </span>
+                <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {prop.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
