@@ -209,7 +209,7 @@ export function Profile() {
       </form>
 
       <a
-        href="https://wa.me/22667155784"
+        href="https://wa.me/22667525172"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 hover:bg-slate-50"

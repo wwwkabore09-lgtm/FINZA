@@ -115,7 +115,7 @@ export function Terms() {
               </a>{' '}
               ou contacte-nous sur{' '}
               <a
-                href="https://wa.me/22667155784"
+                href="https://wa.me/22667525172"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-emerald-600 hover:underline"
