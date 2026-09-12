@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BalanceSparkline } from '../components/BalanceSparkline'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
 import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
@@ -50,6 +51,7 @@ export function Dashboard() {
   const [monthlyExpenses, setMonthlyExpenses] = useState(0)
   const [previousMonthExpenses, setPreviousMonthExpenses] = useState(0)
   const [balancePercentChange, setBalancePercentChange] = useState<number | null>(null)
+  const [balanceHistory, setBalanceHistory] = useState<number[]>([])
   const [financialScore, setFinancialScore] = useState<FinancialScoreResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -111,7 +113,14 @@ export function Dashboard() {
           prevMonthStart.setMonth(prevMonthStart.getMonth() - 1)
           const prevMonthStartStr = prevMonthStart.toISOString().slice(0, 10)
 
-          const [recentRes, currentMonthRes, prevMonthRes] = await Promise.all([
+          const HISTORY_DAYS = 14
+          const todayDate = new Date()
+          todayDate.setHours(0, 0, 0, 0)
+          const historyStart = new Date(todayDate)
+          historyStart.setDate(historyStart.getDate() - (HISTORY_DAYS - 1))
+          const historyStartStr = historyStart.toISOString().slice(0, 10)
+
+          const [recentRes, currentMonthRes, prevMonthRes, historyRes] = await Promise.all([
             supabase
               .from('transactions')
               .select('*, accounts(name)')
@@ -129,10 +138,33 @@ export function Dashboard() {
               .in('account_id', accountIds)
               .gte('date', prevMonthStartStr)
               .lt('date', monthStartStr),
+            supabase
+              .from('transactions')
+              .select('amount, date')
+              .in('account_id', accountIds)
+              .gte('date', historyStartStr),
           ])
           if (recentRes.error) throw recentRes.error
           if (currentMonthRes.error) throw currentMonthRes.error
           if (prevMonthRes.error) throw prevMonthRes.error
+          if (historyRes.error) throw historyRes.error
+
+          const netByDate = new Map<string, number>()
+          for (const row of (historyRes.data ?? []) as { amount: number; date: string }[]) {
+            netByDate.set(row.date, (netByDate.get(row.date) ?? 0) + row.amount)
+          }
+          const historyDates: string[] = []
+          for (let i = 0; i < HISTORY_DAYS; i++) {
+            const d = new Date(historyStart)
+            d.setDate(historyStart.getDate() + i)
+            historyDates.push(d.toISOString().slice(0, 10))
+          }
+          const series = new Array<number>(HISTORY_DAYS).fill(0)
+          series[HISTORY_DAYS - 1] = totalBalance
+          for (let i = HISTORY_DAYS - 1; i > 0; i--) {
+            series[i - 1] = series[i] - (netByDate.get(historyDates[i]) ?? 0)
+          }
+          if (!cancelled) setBalanceHistory(series)
 
           recentTransactions = (recentRes.data ?? []) as unknown as TransactionRow[]
           const currentRows = (currentMonthRes.data ?? []) as unknown as CategoryExpenseRow[]
@@ -302,6 +334,7 @@ export function Dashboard() {
             {balancePercentChange.toFixed(1)}% ce mois-ci
           </p>
         )}
+        {!balanceHidden && <BalanceSparkline values={balanceHistory} />}
         <div className="mt-4 flex items-center justify-between border-t border-white/20 pt-3 text-xs text-emerald-100">
           <span>
             Mis à jour aujourd'hui à{' '}
