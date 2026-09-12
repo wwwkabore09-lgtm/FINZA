@@ -67,6 +67,21 @@ export interface Debt {
   created_at: string
 }
 
+export type RecurringFrequency = 'weekly' | 'monthly'
+
+export interface RecurringTransaction {
+  id: string
+  household_id: string
+  account_id: string
+  category_id: string | null
+  amount: number
+  description: string
+  frequency: RecurringFrequency
+  next_run_date: string
+  active: boolean
+  created_at: string
+}
+
 export type SubscriptionStatus = 'pending' | 'active' | 'cancelled'
 
 export interface Subscription {

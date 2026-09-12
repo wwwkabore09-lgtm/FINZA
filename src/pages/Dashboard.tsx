@@ -2,6 +2,8 @@ import {
   ArrowDownRight,
   Eye,
   EyeOff,
+  Gauge,
+  Lock,
   Sparkles,
   Target,
   TrendingDown,
@@ -11,7 +13,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
+import { computeFinancialScore, type FinancialScoreResult } from '../lib/financialScore'
 import { formatCurrency } from '../lib/format'
+import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import type { Account, Goal, Transaction } from '../types/finance'
 
@@ -21,6 +26,7 @@ interface TransactionRow extends Transaction {
 
 interface CategoryExpenseRow {
   amount: number
+  category_id: string | null
   categories: { name: string } | null
 }
 
@@ -36,12 +42,15 @@ function aggregateByCategory(rows: CategoryExpenseRow[]): Record<string, number>
 
 export function Dashboard() {
   const { householdId, loading: householdLoading, error: householdError } = useHousehold()
+  const plan = useSubscriptionPlan()
+  const { budgetsEnabled } = getPlanLimits(plan)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
   const [monthlyExpenses, setMonthlyExpenses] = useState(0)
   const [previousMonthExpenses, setPreviousMonthExpenses] = useState(0)
   const [balancePercentChange, setBalancePercentChange] = useState<number | null>(null)
+  const [financialScore, setFinancialScore] = useState<FinancialScoreResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [insight, setInsight] = useState<string | null>(null)
@@ -56,7 +65,7 @@ export function Dashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [accountsRes, goalsRes] = await Promise.all([
+        const [accountsRes, goalsRes, budgetsRes, debtsRes] = await Promise.all([
           supabase
             .from('accounts')
             .select('*')
@@ -67,20 +76,31 @@ export function Dashboard() {
             .select('*')
             .eq('household_id', householdId as string)
             .order('created_at'),
+          supabase.from('budgets').select('*').eq('household_id', householdId as string),
+          supabase
+            .from('debts')
+            .select('*')
+            .eq('household_id', householdId as string)
+            .eq('settled', false),
         ])
         if (accountsRes.error) throw accountsRes.error
         if (goalsRes.error) throw goalsRes.error
 
         const accountList = (accountsRes.data ?? []) as Account[]
+        const goalList = (goalsRes.data ?? []) as Goal[]
+        const budgetList = budgetsRes.data ?? []
+        const debtList = debtsRes.data ?? []
         const accountIds = accountList.map((account) => account.id)
         const totalBalance = accountList.reduce((sum, account) => sum + account.balance, 0)
 
         let recentTransactions: TransactionRow[] = []
         let expensesThisMonth = 0
         let expensesLastMonth = 0
+        let incomeThisMonth = 0
         let balanceChangePercent: number | null = null
         let currentMonthByCategory: Record<string, number> = {}
         let previousMonthByCategory: Record<string, number> = {}
+        let spentByCategoryId: Record<string, number> = {}
 
         if (accountIds.length > 0) {
           const monthStart = new Date()
@@ -100,12 +120,12 @@ export function Dashboard() {
               .limit(5),
             supabase
               .from('transactions')
-              .select('amount, categories(name)')
+              .select('amount, category_id, categories(name)')
               .in('account_id', accountIds)
               .gte('date', monthStartStr),
             supabase
               .from('transactions')
-              .select('amount, categories(name)')
+              .select('amount, category_id, categories(name)')
               .in('account_id', accountIds)
               .gte('date', prevMonthStartStr)
               .lt('date', monthStartStr),
@@ -124,8 +144,16 @@ export function Dashboard() {
           expensesLastMonth = prevRows
             .filter((t) => t.amount < 0)
             .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+          incomeThisMonth = currentRows
+            .filter((t) => t.amount > 0)
+            .reduce((sum, t) => sum + t.amount, 0)
           currentMonthByCategory = aggregateByCategory(currentRows)
           previousMonthByCategory = aggregateByCategory(prevRows)
+
+          for (const row of currentRows) {
+            if (row.amount >= 0 || !row.category_id) continue
+            spentByCategoryId[row.category_id] = (spentByCategoryId[row.category_id] ?? 0) + Math.abs(row.amount)
+          }
 
           const netChangeThisMonth = currentRows.reduce((sum, t) => sum + t.amount, 0)
           const startOfMonthBalance = totalBalance - netChangeThisMonth
@@ -134,13 +162,44 @@ export function Dashboard() {
           }
         }
 
+        const activeBudgets = budgetList.filter((b) => b.amount > 0)
+        const budgetAdherence =
+          activeBudgets.length > 0
+            ? activeBudgets.filter((b) => (spentByCategoryId[b.category_id] ?? 0) <= b.amount).length /
+              activeBudgets.length
+            : null
+
+        const goalsWithTarget = goalList.filter((g) => g.target_amount > 0)
+        const goalProgress =
+          goalsWithTarget.length > 0
+            ? goalsWithTarget.reduce(
+                (sum, g) => sum + Math.min(1, g.current_amount / g.target_amount),
+                0,
+              ) / goalsWithTarget.length
+            : null
+
+        const debtOwed = debtList
+          .filter((d) => d.direction === 'owed_by_me')
+          .reduce((sum, d) => sum + d.amount, 0)
+        const debtHealth = totalBalance > 0 ? Math.min(1, Math.max(0, 1 - debtOwed / totalBalance)) : debtOwed > 0 ? 0 : 1
+
+        const savingsRate = incomeThisMonth > 0 ? (incomeThisMonth - expensesThisMonth) / incomeThisMonth : 0
+
+        const score = computeFinancialScore({
+          savingsRate,
+          budgetAdherence,
+          goalProgress,
+          debtHealth,
+        })
+
         if (!cancelled) {
           setAccounts(accountList)
-          setGoals((goalsRes.data ?? []) as Goal[])
+          setGoals(goalList)
           setTransactions(recentTransactions)
           setMonthlyExpenses(expensesThisMonth)
           setPreviousMonthExpenses(expensesLastMonth)
           setBalancePercentChange(balanceChangePercent)
+          setFinancialScore(score)
         }
 
         if (!cancelled && Object.keys(currentMonthByCategory).length > 0) {
@@ -276,6 +335,50 @@ export function Dashboard() {
             <p className="mt-1 text-xs font-medium text-slate-500">{goalsOnTrack} en bonne voie</p>
           )}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2">
+          <Gauge size={18} strokeWidth={2} className="text-slate-400" />
+          <h2 className="text-base font-semibold text-slate-900">Score financier Finza</h2>
+        </div>
+        {!budgetsEnabled ? (
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-dashed border-slate-300 p-4">
+            <p className="text-sm text-slate-500">
+              Un score sur 100 basé sur ton épargne, tes budgets, tes objectifs et tes dettes.
+            </p>
+            <Link
+              to="/subscription"
+              className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600"
+            >
+              <Lock size={12} strokeWidth={2} />
+              Standard+
+            </Link>
+          </div>
+        ) : financialScore ? (
+          <div className="mt-4">
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold text-slate-900">{financialScore.score}</span>
+              <span className="mb-1 text-sm text-slate-400">/ 100</span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {financialScore.breakdown.map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{item.label}</span>
+                    <span>{item.value}%</span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+                    <div
+                      className="h-1.5 rounded-full bg-emerald-500"
+                      style={{ width: `${item.value}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {accounts.length === 0 ? (

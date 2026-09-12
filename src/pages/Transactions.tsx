@@ -1,4 +1,4 @@
-import { Download, Lock, Pencil, Trash2 } from 'lucide-react'
+import { Download, Lock, Pause, Pencil, Play, Repeat, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -7,7 +7,12 @@ import { useSubscriptionPlan } from '../hooks/useSubscriptionPlan'
 import { formatCurrency } from '../lib/format'
 import { getPlanLimits } from '../lib/plans'
 import { supabase } from '../lib/supabase'
-import type { Account, Category, Transaction } from '../types/finance'
+import type { Account, Category, RecurringFrequency, RecurringTransaction, Transaction } from '../types/finance'
+
+const FREQUENCY_LABELS: Record<RecurringFrequency, string> = {
+  weekly: 'Chaque semaine',
+  monthly: 'Chaque mois',
+}
 
 interface TransactionRow extends Transaction {
   accounts: { name: string } | null
@@ -44,12 +49,22 @@ function exportTransactionsCsv(transactions: TransactionRow[]) {
 export function Transactions() {
   const { householdId, loading: householdLoading } = useHousehold()
   const plan = useSubscriptionPlan()
-  const { exportEnabled } = getPlanLimits(plan)
+  const { exportEnabled, budgetsEnabled } = getPlanLimits(plan)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
+  const [recurringRules, setRecurringRules] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [recurAccountId, setRecurAccountId] = useState('')
+  const [recurCategoryId, setRecurCategoryId] = useState('')
+  const [recurKind, setRecurKind] = useState<'expense' | 'income'>('expense')
+  const [recurAmount, setRecurAmount] = useState('')
+  const [recurDescription, setRecurDescription] = useState('')
+  const [recurFrequency, setRecurFrequency] = useState<RecurringFrequency>('monthly')
+  const [recurStartDate, setRecurStartDate] = useState(todayString())
+  const [recurSubmitting, setRecurSubmitting] = useState(false)
 
   const [accountId, setAccountId] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -109,6 +124,16 @@ export function Transactions() {
           }
         }
       }
+
+      const { data: recurData } = await supabase
+        .from('recurring_transactions')
+        .select('*')
+        .eq('household_id', householdId as string)
+        .order('created_at', { ascending: false })
+      if (!cancelled) {
+        setRecurringRules((recurData ?? []) as RecurringTransaction[])
+      }
+
       if (!cancelled) setLoading(false)
     }
 
@@ -232,6 +257,65 @@ export function Transactions() {
       return
     }
     setTransactions((current) => current.filter((t) => t.id !== transactionId))
+  }
+
+  async function handleAddRecurring(event: FormEvent) {
+    event.preventDefault()
+    if (!householdId || !recurAccountId) return
+    setRecurSubmitting(true)
+    setError(null)
+
+    const signedAmount = recurKind === 'expense' ? -Math.abs(Number(recurAmount)) : Math.abs(Number(recurAmount))
+
+    const { data, error: insertError } = await supabase
+      .from('recurring_transactions')
+      .insert({
+        household_id: householdId,
+        account_id: recurAccountId,
+        category_id: recurCategoryId || null,
+        amount: signedAmount,
+        description: recurDescription,
+        frequency: recurFrequency,
+        next_run_date: recurStartDate,
+      })
+      .select('*')
+      .single()
+
+    if (insertError) {
+      setError('Impossible de créer cette transaction récurrente. Réessaie.')
+    } else if (data) {
+      setRecurringRules((current) => [data as RecurringTransaction, ...current])
+      setRecurAmount('')
+      setRecurDescription('')
+      setRecurStartDate(todayString())
+    }
+    setRecurSubmitting(false)
+  }
+
+  async function handleToggleRecurring(rule: RecurringTransaction) {
+    const { data, error: updateError } = await supabase
+      .from('recurring_transactions')
+      .update({ active: !rule.active })
+      .eq('id', rule.id)
+      .select('*')
+      .single()
+    if (updateError) {
+      setError('Impossible de mettre à jour cette règle.')
+      return
+    }
+    if (data) {
+      setRecurringRules((current) => current.map((r) => (r.id === rule.id ? (data as RecurringTransaction) : r)))
+    }
+  }
+
+  async function handleDeleteRecurring(ruleId: string) {
+    if (!confirm('Supprimer cette transaction récurrente ?')) return
+    const { error: deleteError } = await supabase.from('recurring_transactions').delete().eq('id', ruleId)
+    if (deleteError) {
+      setError('Impossible de supprimer cette règle.')
+      return
+    }
+    setRecurringRules((current) => current.filter((r) => r.id !== ruleId))
   }
 
   if (householdLoading || loading) {
@@ -554,6 +638,175 @@ export function Transactions() {
             {submitting ? 'Ajout...' : 'Ajouter'}
           </button>
         </form>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Repeat size={18} strokeWidth={2} className="text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-900">Transactions récurrentes</h2>
+        </div>
+
+        {!budgetsEnabled ? (
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-300 p-4">
+            <p className="text-sm text-slate-500">
+              Automatise ton salaire, ton loyer ou tes abonnements chaque mois.
+            </p>
+            <Link
+              to="/subscription"
+              className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600"
+            >
+              <Lock size={12} strokeWidth={2} />
+              Standard+
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              {recurringRules.length === 0 ? (
+                <p className="text-sm text-slate-500">Aucune transaction récurrente pour l'instant.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {recurringRules.map((rule) => {
+                    const account = accounts.find((a) => a.id === rule.account_id)
+                    const category = categories.find((c) => c.id === rule.category_id)
+                    return (
+                      <li
+                        key={rule.id}
+                        className={`flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3 ${
+                          rule.active ? '' : 'opacity-50'
+                        }`}
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">
+                            {rule.description || category?.name || 'Transaction récurrente'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {account?.name} · {FREQUENCY_LABELS[rule.frequency]} · Prochaine : {rule.next_run_date}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={
+                              rule.amount < 0
+                                ? 'text-sm font-semibold text-red-600'
+                                : 'text-sm font-semibold text-emerald-600'
+                            }
+                          >
+                            {formatCurrency(rule.amount)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRecurring(rule)}
+                            aria-label={rule.active ? 'Mettre en pause' : 'Réactiver'}
+                            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          >
+                            {rule.active ? <Pause size={15} strokeWidth={2} /> : <Play size={15} strokeWidth={2} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRecurring(rule.id)}
+                            aria-label="Supprimer"
+                            className="rounded-full p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 size={15} strokeWidth={2} />
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <form onSubmit={handleAddRecurring} className="h-fit space-y-3 rounded-xl border border-slate-200 p-4">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRecurKind('expense')}
+                  className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                    recurKind === 'expense'
+                      ? 'border-red-300 bg-red-50 text-red-700'
+                      : 'border-slate-300 text-slate-600'
+                  }`}
+                >
+                  Dépense
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecurKind('income')}
+                  className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                    recurKind === 'income'
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-300 text-slate-600'
+                  }`}
+                >
+                  Revenu
+                </button>
+              </div>
+              <select
+                value={recurAccountId || accounts[0]?.id}
+                onChange={(event) => setRecurAccountId(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={recurCategoryId}
+                onChange={(event) => setRecurCategoryId(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="">Sans catégorie</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min="0"
+                required
+                value={recurAmount}
+                onChange={(event) => setRecurAmount(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="Montant (XOF)"
+              />
+              <input
+                value={recurDescription}
+                onChange={(event) => setRecurDescription(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="Ex : Salaire, Loyer"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={recurFrequency}
+                  onChange={(event) => setRecurFrequency(event.target.value as RecurringFrequency)}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="weekly">Chaque semaine</option>
+                  <option value="monthly">Chaque mois</option>
+                </select>
+                <input
+                  type="date"
+                  value={recurStartDate}
+                  onChange={(event) => setRecurStartDate(event.target.value)}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={recurSubmitting}
+                className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {recurSubmitting ? 'Ajout...' : 'Automatiser'}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )
