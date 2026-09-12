@@ -13,6 +13,7 @@ export function Login() {
   const [mode, setMode] = useState<Mode>('signin')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
   const [country, setCountry] = useState<string>(COUNTRIES[0])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -64,6 +65,7 @@ export function Login() {
             data: {
               first_name: firstName,
               last_name: lastName,
+              phone,
               country,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
@@ -416,6 +418,22 @@ export function Login() {
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
+              </div>
+            )}
+            {mode === 'signup' && (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
+                  Téléphone
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="+226 XX XX XX XX"
+                />
               </div>
             )}
             {mode === 'signup' && (

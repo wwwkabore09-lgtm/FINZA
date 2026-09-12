@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { DashboardLayout } from './components/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { WhatsAppButton } from './components/WhatsAppButton'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { NotFound } from './pages/NotFound'
@@ -33,6 +34,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <WhatsAppButton />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
