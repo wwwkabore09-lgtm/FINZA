@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .lte('next_run_date', today)
 
   if (fetchError) {
-    res.status(500).json({ error: 'Impossible de charger les règles récurrentes' })
+    res.status(500).json({ error: 'Impossible de charger les règles récurrentes', detail: fetchError })
     return
   }
 
