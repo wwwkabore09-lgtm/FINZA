@@ -5,6 +5,7 @@ import { DashboardLayout } from './components/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
+import { NotFound } from './pages/NotFound'
 import { Privacy } from './pages/Privacy'
 import { Terms } from './pages/Terms'
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/admin" element={<Admin />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

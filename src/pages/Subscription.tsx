@@ -19,6 +19,7 @@ export function Subscription() {
   const [error, setError] = useState<string | null>(null)
   const [payingPlan, setPayingPlan] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     if (!householdId) return
@@ -149,6 +150,28 @@ export function Subscription() {
     }
   }
 
+  async function handleCancel() {
+    if (!subscription || !confirm('Annuler ton abonnement ? Tu repasseras au forfait Gratuit.')) {
+      return
+    }
+    setCancelling(true)
+    setError(null)
+
+    const { data, error: updateError } = await supabase
+      .from('subscriptions')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', subscription.id)
+      .select('*')
+      .single()
+
+    if (updateError) {
+      setError("Impossible d'annuler l'abonnement. Réessaie.")
+    } else if (data) {
+      setSubscription(data as Subscription)
+    }
+    setCancelling(false)
+  }
+
   if (householdLoading || loading || confirming) {
     return <LoadingState label={confirming ? 'Vérification du paiement...' : 'Chargement...'} />
   }
@@ -163,6 +186,17 @@ export function Subscription() {
             : "Aucun forfait actif pour l'instant."}
         </p>
       </div>
+
+      {subscription?.status === 'active' && (
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={cancelling}
+          className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+        >
+          {cancelling ? 'Annulation...' : 'Annuler mon abonnement'}
+        </button>
+      )}
 
       <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
         Paiement via SasPay — vérifie que le compte est en mode test avant de payer.

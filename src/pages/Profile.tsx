@@ -25,6 +25,10 @@ export function Profile() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSaved, setPasswordSaved] = useState(false)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -42,6 +46,27 @@ export function Profile() {
       setSaved(true)
     }
     setSubmitting(false)
+  }
+
+  async function handleChangePassword(event: FormEvent) {
+    event.preventDefault()
+    setPasswordError(null)
+    setPasswordSaved(false)
+
+    if (newPassword.length < 8) {
+      setPasswordError('Le mot de passe doit contenir au moins 8 caractères.')
+      return
+    }
+
+    setChangingPassword(true)
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+    if (updateError) {
+      setPasswordError(translateAuthError(updateError))
+    } else {
+      setPasswordSaved(true)
+      setNewPassword('')
+    }
+    setChangingPassword(false)
   }
 
   async function handleDeleteAccount() {
@@ -144,6 +169,44 @@ export function Profile() {
         <CreditCard size={18} strokeWidth={2} className="text-slate-400" />
         Gérer mon abonnement
       </Link>
+
+      <form
+        onSubmit={handleChangePassword}
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5"
+      >
+        <h2 className="text-sm font-semibold text-slate-900">Changer le mot de passe</h2>
+        <div>
+          <label htmlFor="new-profile-password" className="block text-sm font-medium text-slate-700">
+            Nouveau mot de passe
+          </label>
+          <input
+            id="new-profile-password"
+            type="password"
+            minLength={8}
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            placeholder="8 caractères minimum"
+          />
+        </div>
+
+        {passwordError && (
+          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{passwordError}</p>
+        )}
+        {passwordSaved && (
+          <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+            Mot de passe mis à jour.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={changingPassword || newPassword.length === 0}
+          className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+        >
+          {changingPassword ? 'Enregistrement...' : 'Mettre à jour'}
+        </button>
+      </form>
 
       <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <Link

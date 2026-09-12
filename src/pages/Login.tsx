@@ -6,7 +6,7 @@ import { translateAuthError } from '../lib/authErrors'
 import { COUNTRIES } from '../lib/countries'
 import { supabase } from '../lib/supabase'
 
-type Mode = 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'forgot'
 
 export function Login() {
   const navigate = useNavigate()
@@ -22,6 +22,18 @@ export function Login() {
   const [otpCode, setOtpCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resent, setResent] = useState(false)
+  const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request')
+  const [newPassword, setNewPassword] = useState('')
+  const [resetting, setResetting] = useState(false)
+
+  function resetAuxState() {
+    setError(null)
+    setConfirmationSent(false)
+    setOtpCode('')
+    setResent(false)
+    setForgotStep('request')
+    setNewPassword('')
+  }
 
   async function handleGoogleSignIn() {
     setError(null)
@@ -35,6 +47,12 @@ export function Login() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
+
+    if (mode === 'signup' && password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.')
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -107,6 +125,62 @@ export function Login() {
     }
   }
 
+  async function handleForgotRequest(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    setSubmitting(true)
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email)
+    if (resetError) {
+      setError(translateAuthError(resetError))
+    } else {
+      setForgotStep('reset')
+    }
+    setSubmitting(false)
+  }
+
+  async function handleResendResetCode() {
+    setError(null)
+    setResent(false)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email)
+    if (resetError) {
+      setError(translateAuthError(resetError))
+    } else {
+      setResent(true)
+    }
+  }
+
+  async function handleResetPassword(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+
+    if (newPassword.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.')
+      return
+    }
+
+    setResetting(true)
+
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'recovery',
+      })
+      if (verifyError) throw verifyError
+      if (!data.session) throw new Error('Session introuvable')
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+      if (updateError) throw updateError
+
+      navigate('/dashboard')
+    } catch (err) {
+      setError(translateAuthError(err))
+    } finally {
+      setResetting(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -114,47 +188,150 @@ export function Login() {
           <Logo />
         </Link>
         <h1 className="mt-4 text-2xl font-bold text-slate-900">
-          {mode === 'signin' ? 'Connexion' : 'Créer un compte'}
+          {mode === 'signin' ? 'Connexion' : mode === 'signup' ? 'Créer un compte' : 'Mot de passe oublié'}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           {mode === 'signin'
             ? 'Accède à ton tableau de bord financier.'
-            : 'Commence à consolider tes finances en une minute.'}
+            : mode === 'signup'
+              ? 'Commence à consolider tes finances en une minute.'
+              : 'Reçois un code par email pour choisir un nouveau mot de passe.'}
         </p>
 
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-            <path
-              fill="#4285F4"
-              d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.9c1.7-1.57 2.68-3.87 2.68-6.61z"
-            />
-            <path
-              fill="#34A853"
-              d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03z"
-            />
-            <path
-              fill="#EA4335"
-              d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97L3.95 7.3C4.66 5.17 6.65 3.58 9 3.58z"
-            />
-          </svg>
-          Continuer avec Google
-        </button>
+        {mode !== 'forgot' && (
+          <>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.9c1.7-1.57 2.68-3.87 2.68-6.61z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97L3.95 7.3C4.66 5.17 6.65 3.58 9 3.58z"
+                />
+              </svg>
+              Continuer avec Google
+            </button>
 
-        <div className="mt-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-200" />
-          <span className="text-xs font-medium text-slate-400">ou</span>
-          <div className="h-px flex-1 bg-slate-200" />
-        </div>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-medium text-slate-400">ou</span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+          </>
+        )}
 
-        {confirmationSent ? (
+        {mode === 'forgot' ? (
+          <div className="mt-4 space-y-4">
+            {forgotStep === 'request' ? (
+              <form onSubmit={handleForgotRequest} className="space-y-4">
+                <div>
+                  <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-700">
+                    Email
+                  </label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder="toi@exemple.com"
+                  />
+                </div>
+
+                {error && (
+                  <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {submitting && <Spinner className="border-white/40 border-t-white" />}
+                  {submitting ? 'Envoi...' : 'Envoyer le code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+                  Un code a été envoyé à {email}. Saisis-le avec ton nouveau mot de passe.
+                </p>
+                <div>
+                  <label htmlFor="reset-otp-code" className="block text-sm font-medium text-slate-700">
+                    Code reçu par email
+                  </label>
+                  <input
+                    id="reset-otp-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    required
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ''))}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.3em] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder="00000000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="new-password" className="block text-sm font-medium text-slate-700">
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    required
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder="8 caractères minimum"
+                  />
+                </div>
+
+                {error && (
+                  <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
+                )}
+                {resent && (
+                  <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+                    Un nouveau code a été envoyé.
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={resetting || otpCode.length < 6}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {resetting && <Spinner className="border-white/40 border-t-white" />}
+                  {resetting ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendResetCode}
+                  className="w-full text-center text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                >
+                  Renvoyer le code
+                </button>
+              </form>
+            )}
+          </div>
+        ) : confirmationSent ? (
           <div className="mt-4 space-y-4">
             <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
               Un code de confirmation a été envoyé à {email}. Saisis-le ci-dessous pour
@@ -278,22 +455,39 @@ export function Login() {
               />
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Mot de passe
-              </label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Mot de passe
+                </label>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot')
+                      resetAuxState()
+                    }}
+                    className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                )}
+              </div>
               <input
                 id="password"
                 type="password"
                 required
-                minLength={6}
+                minLength={mode === 'signup' ? 8 : undefined}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 placeholder="••••••••"
               />
+              {mode === 'signup' && (
+                <p className="mt-1 text-xs text-slate-400">8 caractères minimum.</p>
+              )}
             </div>
 
             {error && (
@@ -318,20 +512,32 @@ export function Login() {
         )}
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          {mode === 'signin' ? "Pas encore de compte ?" : 'Déjà un compte ?'}{' '}
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin')
-              setError(null)
-              setConfirmationSent(false)
-              setOtpCode('')
-              setResent(false)
-            }}
-            className="font-medium text-emerald-600 hover:text-emerald-700"
-          >
-            {mode === 'signin' ? "S'inscrire" : 'Se connecter'}
-          </button>
+          {mode === 'forgot' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin')
+                resetAuxState()
+              }}
+              className="font-medium text-emerald-600 hover:text-emerald-700"
+            >
+              Retour à la connexion
+            </button>
+          ) : (
+            <>
+              {mode === 'signin' ? 'Pas encore de compte ?' : 'Déjà un compte ?'}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin')
+                  resetAuxState()
+                }}
+                className="font-medium text-emerald-600 hover:text-emerald-700"
+              >
+                {mode === 'signin' ? "S'inscrire" : 'Se connecter'}
+              </button>
+            </>
+          )}
         </p>
 
         {mode === 'signup' && (
