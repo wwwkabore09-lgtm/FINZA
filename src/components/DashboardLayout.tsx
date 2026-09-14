@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   Bell,
-  Bot,
   CreditCard,
   HandCoins,
   LayoutDashboard,
@@ -27,7 +26,6 @@ import { LoadingState } from './Spinner'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { to: '/assistant', label: 'Assistant', icon: Bot },
   { to: '/accounts', label: 'Comptes', icon: Wallet },
   { to: '/transactions', label: 'Transactions', icon: Repeat },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
@@ -36,7 +34,6 @@ const NAV_ITEMS = [
 ]
 
 const MOBILE_MENU_ITEMS = [
-  { to: '/assistant', label: 'Assistant', icon: Bot, color: 'bg-teal-50 text-teal-600' },
   { to: '/transactions', label: 'Transactions', icon: Repeat, color: 'bg-blue-50 text-blue-600' },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank, color: 'bg-amber-50 text-amber-600' },
   { to: '/goals', label: 'Objectifs', icon: Target, color: 'bg-violet-50 text-violet-600' },
@@ -276,8 +273,8 @@ export function DashboardLayout() {
 
         <div className="flex flex-1 justify-center">
           <Link
-            to="/assistant"
-            aria-label="Assistant"
+            to="/transactions"
+            aria-label="Ajouter une transaction"
             className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
           >
             <Plus size={24} strokeWidth={2.5} />

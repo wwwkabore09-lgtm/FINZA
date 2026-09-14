@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AssistantButton } from './components/AssistantButton'
 import { AuthProvider } from './components/AuthProvider'
 import { DashboardLayout } from './components/DashboardLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -35,6 +36,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <WhatsAppButton />
+        <AssistantButton />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
