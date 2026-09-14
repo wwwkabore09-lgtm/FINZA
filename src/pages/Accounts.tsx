@@ -1,4 +1,4 @@
-import { Lock, Pencil, Trash2 } from 'lucide-react'
+import { Coins, CreditCard, Lock, Pencil, Trash2, Wallet } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/Spinner'
@@ -13,6 +13,20 @@ import { supabase } from '../lib/supabase'
 import type { Account, AccountType } from '../types/finance'
 
 const CUSTOM_OPERATOR = '__custom__'
+
+const ACCOUNT_CARD_STYLES: Record<AccountType, string> = {
+  mobile_money: 'bg-gradient-to-br from-emerald-600 to-emerald-700',
+  bank: 'bg-gradient-to-br from-indigo-600 to-indigo-700',
+  cash: 'bg-gradient-to-br from-slate-700 to-slate-800',
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
 
 export function Accounts() {
   const { user } = useAuth()
@@ -144,6 +158,8 @@ export function Accounts() {
   }
 
   const limitReached = maxAccounts !== null && accounts.length >= maxAccounts
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0)
+  const distinctTypes = new Set(accounts.map((account) => account.type)).size
 
   return (
     <div className="space-y-8">
@@ -154,46 +170,75 @@ export function Accounts() {
         </p>
       </div>
 
+      {accounts.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Wallet size={17} strokeWidth={2} />
+            </span>
+            <p className="mt-2.5 text-xs text-slate-500">Comptes</p>
+            <p className="text-lg font-bold text-slate-900">{accounts.length}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <Coins size={17} strokeWidth={2} />
+            </span>
+            <p className="mt-2.5 text-xs text-slate-500">Solde total</p>
+            <p className="truncate text-lg font-bold text-slate-900">{formatCurrency(totalBalance)}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+              <CreditCard size={17} strokeWidth={2} />
+            </span>
+            <p className="mt-2.5 text-xs text-slate-500">Types</p>
+            <p className="text-lg font-bold text-slate-900">{distinctTypes}</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="lg:col-span-2">
           {accounts.length === 0 ? (
-            <p className="text-sm text-slate-500">Aucun compte pour l'instant.</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="text-sm text-slate-500">Aucun compte pour l'instant.</p>
+            </div>
           ) : (
-            <ul className="space-y-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {accounts.map((account) => {
                 const Icon = ACCOUNT_TYPE_ICONS[account.type]
 
                 if (editingId === account.id) {
                   return (
-                    <li key={account.id} className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4">
+                    <div
+                      key={account.id}
+                      className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 sm:col-span-1"
+                    >
                       <form onSubmit={(event) => handleEditSubmit(event, account.id)} className="space-y-3">
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <select
-                            value={editType}
-                            onChange={(event) => setEditType(event.target.value as AccountType)}
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                          >
-                            {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            required
-                            value={editName}
-                            onChange={(event) => setEditName(event.target.value)}
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            placeholder="Nom"
-                          />
-                          <input
-                            type="number"
-                            value={editBalance}
-                            onChange={(event) => setEditBalance(event.target.value)}
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            placeholder="Solde"
-                          />
-                        </div>
+                        <select
+                          value={editType}
+                          onChange={(event) => setEditType(event.target.value as AccountType)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        >
+                          {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          required
+                          value={editName}
+                          onChange={(event) => setEditName(event.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          placeholder="Nom"
+                        />
+                        <input
+                          type="number"
+                          value={editBalance}
+                          onChange={(event) => setEditBalance(event.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          placeholder="Solde"
+                        />
                         <div className="flex gap-2">
                           <button
                             type="submit"
@@ -211,49 +256,59 @@ export function Accounts() {
                           </button>
                         </div>
                       </form>
-                    </li>
+                    </div>
                   )
                 }
 
                 return (
-                  <li
+                  <div
                     key={account.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3"
+                    className={`relative overflow-hidden rounded-2xl p-5 text-white shadow-lg ${ACCOUNT_CARD_STYLES[account.type]}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                        <Icon size={18} strokeWidth={2} />
+                    <div className="flex items-start justify-between">
+                      <span className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide">
+                        {ACCOUNT_TYPE_LABELS[account.type]}
                       </span>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{account.name}</p>
-                        <p className="text-xs text-slate-500">{ACCOUNT_TYPE_LABELS[account.type]}</p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(account)}
+                          aria-label="Modifier"
+                          className="rounded-full p-1.5 text-white/80 hover:bg-white/15 hover:text-white"
+                        >
+                          <Pencil size={14} strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(account.id)}
+                          aria-label="Supprimer"
+                          className="rounded-full p-1.5 text-white/80 hover:bg-white/15 hover:text-white"
+                        >
+                          <Trash2 size={14} strokeWidth={2} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(account.balance, account.currency)}
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15">
+                        <Icon size={16} strokeWidth={2} />
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(account)}
-                        aria-label="Modifier"
-                        className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                      >
-                        <Pencil size={15} strokeWidth={2} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(account.id)}
-                        aria-label="Supprimer"
-                        className="rounded-full p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 size={15} strokeWidth={2} />
-                      </button>
+                      <span className="text-sm font-semibold">{account.name}</span>
                     </div>
-                  </li>
+
+                    <p className="mt-5 text-xs text-white/70">Solde actuel</p>
+                    <p className="text-2xl font-bold">{formatCurrency(account.balance, account.currency)}</p>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-white/20 pt-3 text-[11px] text-white/70">
+                      <span className="rounded-full bg-white/15 px-2 py-0.5 font-medium">
+                        {account.currency}
+                      </span>
+                      <span>Créé le {formatDate(account.created_at)}</span>
+                    </div>
+                  </div>
                 )
               })}
-            </ul>
+            </div>
           )}
         </div>
 
