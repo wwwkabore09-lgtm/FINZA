@@ -1,0 +1,277 @@
+<title>Brief Finza</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F7F3;
+    --paper-raised:#FFFFFF;
+    --ink:#17231E;
+    --muted:#57665D;
+    --line:#DCE3DC;
+    --accent:#0E7C55;
+    --accent-deep:#0B5C40;
+    --accent-tint:#E4F1E9;
+    --avoid:#9A4A34;
+    --avoid-tint:#F6E9E3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121814;
+      --paper-raised:#1A211C;
+      --ink:#EBEFEA;
+      --muted:#9AABA0;
+      --line:#2B3630;
+      --accent:#3FBE86;
+      --accent-deep:#5FD39D;
+      --accent-tint:#1B2A22;
+      --avoid:#D98468;
+      --avoid-tint:#2C1F1A;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121814;
+    --paper-raised:#1A211C;
+    --ink:#EBEFEA;
+    --muted:#9AABA0;
+    --line:#2B3630;
+    --accent:#3FBE86;
+    --accent-deep:#5FD39D;
+    --accent-tint:#1B2A22;
+    --avoid:#D98468;
+    --avoid-tint:#2C1F1A;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    padding-inline:20px;
+    padding-block:48px 80px;
+  }
+  .sheet{max-width:760px;margin:0 auto}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent-deep);
+    font-weight:500;
+  }
+
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif;text-wrap:balance;color:var(--ink)}
+  h1{font-size:clamp(2.1rem,5.5vw,2.9rem);font-weight:600;font-variation-settings:'opsz' 40;line-height:1.08;margin:.4em 0 0}
+  h2{font-size:1.5rem;font-weight:600;font-variation-settings:'opsz' 24;margin:0}
+  h3{font-size:1.05rem;font-weight:600;font-variation-settings:'opsz' 14;margin:0}
+
+  p{margin:.6em 0;max-width:65ch}
+  .lede{font-size:1.05rem;color:var(--muted);max-width:56ch}
+
+  /* header */
+  header{padding-block-end:36px;border-bottom:1px solid var(--line);margin-bottom:40px}
+  .stamp{
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;
+  }
+  .mark{
+    width:34px;height:34px;border-radius:9px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .mark svg{width:18px;height:18px}
+  .stamp .name{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;color:var(--muted)}
+
+  .snapshot{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    margin-top:28px;
+  }
+  .snapshot div{background:var(--paper-raised);padding:14px 16px}
+  .snapshot dt{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0}
+  .snapshot dd{margin:4px 0 0;font-weight:600;font-size:.92rem}
+
+  /* sections */
+  section{margin-block:48px}
+  .section-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px}
+  .section-head .eyebrow{white-space:nowrap}
+  .section-head::after{content:"";flex:1;height:1px;background:var(--line);align-self:center}
+
+  .callout{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;
+    padding:22px 24px;
+  }
+
+  blockquote{
+    margin:0;padding:26px 28px;border-radius:12px;
+    background:var(--accent-tint);border:1px solid var(--line);
+    font-family:'Fraunces',Georgia,serif;font-size:1.25rem;font-weight:500;
+    font-variation-settings:'opsz' 20;line-height:1.4;color:var(--ink);text-wrap:balance;
+  }
+  blockquote cite{display:block;margin-top:12px;font-family:'IBM Plex Mono',monospace;
+    font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  ul.points{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  ul.points li{padding-left:22px;position:relative}
+  ul.points li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:2px}
+  .say li::before{background:var(--accent)}
+  .avoid li::before{background:var(--avoid)}
+
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:640px){.pair,.snapshot{grid-template-columns:1fr 1fr}}
+  @media (max-width:460px){.pair{grid-template-columns:1fr}}
+
+  .pane{border-radius:12px;padding:20px 22px;border:1px solid var(--line)}
+  .pane.say{background:var(--accent-tint)}
+  .pane.avoid{background:var(--avoid-tint)}
+  .pane h3{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .pane.say h3{color:var(--accent-deep)}
+  .pane.avoid h3{color:var(--avoid)}
+
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);font-weight:500;padding:0 12px 10px;border-bottom:1px solid var(--line)}
+  td{padding:12px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td:last-child,th:last-child{padding-right:0}
+  .price{font-weight:600;white-space:nowrap}
+  .feat{color:var(--muted);font-size:.92rem}
+
+  .swatches{display:flex;gap:14px;flex-wrap:wrap}
+  .swatch{width:112px}
+  .swatch .chip{height:64px;border-radius:9px;border:1px solid var(--line)}
+  .swatch .label{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted)}
+  .swatch .name{font-size:12px;font-weight:600;margin-top:1px}
+
+  .chanlist{display:flex;flex-direction:column;gap:14px}
+  .chan{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+  .chan:last-child{border-bottom:none}
+  .chan .rank{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:600;color:var(--accent);line-height:1;width:2ch;flex:none;font-variation-settings:'opsz' 24}
+  .chan h3{margin-bottom:3px}
+  .chan p{margin:0;color:var(--muted);font-size:.94rem}
+
+  footer{margin-top:56px;padding-top:28px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+  footer a{color:var(--accent-deep);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+</style>
+
+<div class="sheet">
+
+  <header>
+    <div class="stamp">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 20V8a4 4 0 0 1 4-4h8"/><path d="M8 13h8"/><path d="M8 20V13"/>
+        </svg>
+      </span>
+      <span class="name">FINZA · BRIEF DE CAMPAGNE</span>
+    </div>
+    <p class="eyebrow">Marketing — v1</p>
+    <h1>Faire connaître Finza au Burkina Faso</h1>
+    <p class="lede">Le document de référence pour écrire, filmer ou concevoir n'importe quel contenu Finza — ce que le produit fait vraiment, à qui il parle, et sur quel ton.</p>
+
+    <dl class="snapshot">
+      <div><dt>Produit</dt><dd>Financial OS perso.</dd></div>
+      <div><dt>Marché</dt><dd>Afrique francophone</dd></div>
+      <div><dt>Lancement</dt><dd>Burkina Faso</dd></div>
+      <div><dt>Devise</dt><dd>Franc CFA (XOF)</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Le produit</span></div>
+    <p>Finza consolide dans une seule application ce qui, pour la plupart des gens, reste éparpillé : le solde Mobile Money, le compte en banque, et le liquide en poche. L'utilisateur renseigne lui-même ses comptes et ses mouvements — Finza ne se connecte à aucun opérateur ni banque, et ne touche jamais à l'argent réel.</p>
+    <p>Au-delà du simple suivi, l'app calcule un <strong>Score financier sur 100</strong> (épargne, budgets, objectifs, dettes) et propose un <strong>assistant conversationnel</strong> qui répond aux questions sur les vraies données de l'utilisateur — pas des réponses génériques.</p>
+    <div class="callout" style="margin-top:20px">
+      <h3 style="margin-bottom:10px">Ce qui existe aujourd'hui</h3>
+      <p class="feat" style="margin:0">Comptes multiples (Mobile Money / Banque / Espèces) · Transactions catégorisées par IA · Budgets par catégorie · Objectifs d'épargne · Suivi des dettes entre particuliers · Score financier · Assistant IA · Notifications automatiques · Export CSV (Premium+)</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">À qui on parle</span></div>
+    <p>Une personne au Burkina Faso (ou en zone UEMOA) qui jongle déjà entre Orange Money, Moov Money et une carte bancaire, et qui n'a <em>aucune vue d'ensemble</em> de ce qu'elle possède réellement. Souvent jeune actif ou petit entrepreneur, à l'aise avec son téléphone, mais pas avec les tableurs. Elle ne cherche pas un outil d'investissement — elle veut arrêter de deviner combien il lui reste avant la fin du mois.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Le ton</span></div>
+    <blockquote>
+      Direct, chaleureux, jamais condescendant. On parle comme à quelqu'un qu'on aide à faire ses comptes, pas comme une banque qui explique un produit financier.
+      <cite>Voix Finza</cite>
+    </blockquote>
+    <p style="margin-top:18px">Tutoiement systématique. Phrases courtes. On nomme les choses comme les gens les nomment déjà — « Orange Money », « le liquide », « la fin du mois » — jamais de jargon fintech (« agrégation », « dashboard analytique »). L'humour est permis s'il reste sobre ; jamais aux dépens de l'utilisateur.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Messages</span></div>
+    <div class="pair">
+      <div class="pane say">
+        <h3>✓ À dire</h3>
+        <ul class="points say">
+          <li>Tout ton argent au même endroit, en un coup d'œil</li>
+          <li>Gratuit pour commencer, aucune carte requise</li>
+          <li>Pensé et construit pour le Franc CFA, pas adapté d'un produit occidental</li>
+          <li>Finza ne touche jamais ton argent réel</li>
+          <li>Un assistant qui répond sur TES vraies données</li>
+        </ul>
+      </div>
+      <div class="pane avoid">
+        <h3>✕ À éviter</h3>
+        <ul class="points avoid">
+          <li>« Partage ton compte avec ta famille » — l'invitation multi-foyer n'est pas encore active</li>
+          <li>Comparer Finza à une banque ou promettre du crédit</li>
+          <li>Tout vocabulaire investissement / bourse (ce n'est pas notre angle)</li>
+          <li>Montants en dollars ou visuels non localisés XOF</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Forfaits</span></div>
+    <table>
+      <thead><tr><th>Forfait</th><th>Prix</th><th>Débloque</th></tr></thead>
+      <tbody>
+        <tr><td>Gratuit</td><td class="price">0 FCFA</td><td class="feat">2 comptes, 1 objectif</td></tr>
+        <tr><td>Standard</td><td class="price">1 200 FCFA/mois</td><td class="feat">Budgets par catégorie, suivi des dettes</td></tr>
+        <tr><td>Premium</td><td class="price">1 800 FCFA/mois</td><td class="feat">Objectifs illimités, export des données</td></tr>
+        <tr><td>Pro Max</td><td class="price">3 000 FCFA/mois</td><td class="feat">Support prioritaire</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Concurrence</span></div>
+    <p><strong>Lidiyé</strong> est le concurrent direct le plus sérieux — même zone UEMOA, forfait gratuit à vie, portefeuille boursier BRVM, bot WhatsApp. Ne pas l'ignorer ni le dénigrer dans le message public. Notre angle de différenciation : la simplicité (pas de bourse, pas de carte, rien à apprendre) et l'ambition du foyer partagé, à venir.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Identité</span></div>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#059669"></div><div class="name">Émeraude</div><div class="label">#059669</div></div>
+      <div class="swatch"><div class="chip" style="background:#F8FAFC;border:1px solid var(--line)"></div><div class="name">Fond</div><div class="label">#F8FAFC</div></div>
+      <div class="swatch"><div class="chip" style="background:#0F172A"></div><div class="name">Encre</div><div class="label">#0F172A</div></div>
+      <div class="swatch"><div class="chip" style="background:#25D366"></div><div class="name">WhatsApp</div><div class="label">#25D366</div></div>
+    </div>
+    <p style="margin-top:16px">Nom du produit toujours en un mot : <strong>Finza</strong>. Domaine : <strong>finza.credit</strong>.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Canaux prioritaires</span></div>
+    <div class="chanlist">
+      <div class="chan"><span class="rank">1</span><div><h3>WhatsApp Status + groupes</h3><p>Le canal le plus fort dans la région. Capture d'écran réelle + légende courte, 2–3 fois par semaine.</p></div></div>
+      <div class="chan"><span class="rank">2</span><div><h3>Facebook</h3><p>Page Finza + participation dans des groupes locaux d'entrepreneuriat, jamais en mode spam.</p></div></div>
+      <div class="chan"><span class="rank">3</span><div><h3>TikTok / Reels</h3><p>Format 30–40s, sous-titré, musique tendance. Le problème d'abord, la solution ensuite.</p></div></div>
+      <div class="chan"><span class="rank">4</span><div><h3>Bouche-à-oreille</h3><p>Chaque utilisateur satisfait est invité à partager avec 2–3 proches.</p></div></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Finza — finza.credit</span>
+    <span>WhatsApp <a href="https://wa.me/22667525172">+226 67 52 51 72</a></span>
+  </footer>
+
+</div>

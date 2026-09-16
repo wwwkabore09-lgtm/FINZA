@@ -12,4 +12,4 @@ Disallow: /subscription
 Disallow: /notifications
 Disallow: /admin
 
-Sitemap: https://finza.credit/sitemap.xml
+Sitemap: https://www.finza.credit/sitemap.xml
