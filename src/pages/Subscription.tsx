@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'
 import type { Subscription } from '../types/finance'
 
 export function Subscription() {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const { householdId, loading: householdLoading } = useHousehold()
   const [searchParams, setSearchParams] = useSearchParams()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
@@ -21,66 +21,33 @@ export function Subscription() {
   const [confirmPlan, setConfirmPlan] = useState<(typeof PLANS)[number] | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [cancelling, setCancelling] = useState(false)
-  const [debugLines, setDebugLines] = useState<string[]>([])
 
   useEffect(() => {
     if (!householdId) return
     let cancelled = false
     const returningFromPayment = searchParams.get('subscription') !== null
 
-    async function checkSession(sessionId: string): Promise<'completed' | 'pending' | 'failed'> {
-      const response = await fetch('/api/confirm-payment', {
+    async function syncFromServer(): Promise<{ activated: boolean; pending: boolean }> {
+      const response = await fetch('/api/sync-subscription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
       })
-      const data = (await response.json()) as { status?: string }
-      if (data.status === 'completed') return 'completed'
-      if (data.status === 'failed') return 'failed'
-      return 'pending'
+      if (!response.ok) throw new Error('sync failed')
+      return (await response.json()) as { activated: boolean; pending: boolean }
     }
 
     async function load() {
       if (returningFromPayment) setConfirming(true)
 
       try {
-        // Re-check recent payments that never reached "active": the return
-        // from SasPay can arrive before the payment is recorded, and users
-        // may also close the tab before being redirected back.
-        const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-        const { data: unfinished } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('household_id', householdId as string)
-          .in('status', ['pending', 'cancelled'])
-          .not('saspay_session_id', 'is', null)
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
-          .limit(5)
-
-        for (const row of (unfinished ?? []) as Subscription[]) {
-          if (cancelled || !row.saspay_session_id) break
-
-          let result = await checkSession(row.saspay_session_id)
-          for (let attempt = 0; attempt < 4 && result === 'pending' && returningFromPayment; attempt++) {
-            await new Promise((resolve) => setTimeout(resolve, 2500))
-            if (cancelled) return
-            result = await checkSession(row.saspay_session_id)
-          }
-
-          if (result === 'completed') {
-            await supabase
-              .from('subscriptions')
-              .update({ status: 'active', updated_at: new Date().toISOString() })
-              .eq('id', row.id)
-            break
-          }
-          if (result === 'failed' && row.status === 'pending') {
-            await supabase
-              .from('subscriptions')
-              .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-              .eq('id', row.id)
-          }
+        // The server re-checks recent payments against SasPay: the return from
+        // SasPay can arrive before the payment is recorded, and users may also
+        // close the tab before being redirected back.
+        let result = await syncFromServer()
+        for (let attempt = 0; attempt < 4 && result.pending && returningFromPayment; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, 2500))
+          if (cancelled) return
+          result = await syncFromServer()
         }
       } catch {
         if (returningFromPayment && !cancelled) setError('Impossible de confirmer le paiement.')
@@ -102,33 +69,6 @@ export function Subscription() {
         setError("Impossible de charger l'abonnement.")
       } else {
         setSubscription((active as Subscription) ?? null)
-      }
-
-      if (searchParams.get('debug') === '1') {
-        const { data: allRows } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('household_id', householdId as string)
-          .order('created_at', { ascending: false })
-          .limit(6)
-        const lines: string[] = []
-        for (const row of (allRows ?? []) as Subscription[]) {
-          let detail = 'pas de session SasPay'
-          if (row.saspay_session_id) {
-            try {
-              const r = await fetch('/api/confirm-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: row.saspay_session_id }),
-              })
-              detail = JSON.stringify(await r.json())
-            } catch {
-              detail = 'erreur réseau'
-            }
-          }
-          lines.push(`${row.id.slice(0, 8)} | ${row.plan} | ${row.status} | ${row.created_at.slice(0, 16)} | ${detail}`)
-        }
-        setDebugLines(lines)
       }
 
       setConfirming(false)
@@ -171,7 +111,10 @@ export function Subscription() {
 
       const response = await fetch('/api/create-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token ?? ''}`,
+        },
         body: JSON.stringify({
           plan: plan.name,
           amount: plan.priceXof,
@@ -187,11 +130,6 @@ export function Subscription() {
         throw new Error(data.error ?? 'Erreur SasPay')
       }
 
-      await supabase
-        .from('subscriptions')
-        .update({ saspay_session_id: data.sessionId })
-        .eq('id', pending.id)
-
       window.location.href = data.checkoutUrl
     } catch {
       setError('Impossible de démarrer le paiement. Réessaie.')
@@ -206,17 +144,19 @@ export function Subscription() {
     setCancelling(true)
     setError(null)
 
-    const { data, error: updateError } = await supabase
-      .from('subscriptions')
-      .update({ status: 'cancelled', saspay_session_id: null, updated_at: new Date().toISOString() })
-      .eq('id', subscription.id)
-      .select('*')
-      .single()
-
-    if (updateError) {
+    try {
+      const response = await fetch('/api/sync-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token ?? ''}`,
+        },
+        body: JSON.stringify({ action: 'cancel', subscriptionId: subscription.id }),
+      })
+      if (!response.ok) throw new Error('cancel failed')
+      setSubscription(null)
+    } catch {
       setError("Impossible d'annuler l'abonnement. Réessaie.")
-    } else if (data) {
-      setSubscription(data as Subscription)
     }
     setCancelling(false)
   }
@@ -235,12 +175,6 @@ export function Subscription() {
             : "Aucun forfait actif pour l'instant."}
         </p>
       </div>
-
-      {debugLines.length > 0 && (
-        <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
-          {debugLines.join('\n')}
-        </pre>
-      )}
 
       {subscription?.status === 'active' && (
         <button

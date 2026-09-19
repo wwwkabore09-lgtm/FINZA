@@ -20,6 +20,16 @@ async function getRawBody(req: VercelRequest): Promise<string> {
 const SASPAY_BASE_URL = 'https://api.saspay.me/api/v1'
 const FIVE_MINUTES_SECONDS = 300
 
+function findSubscriptionId(value: unknown, depth: number): string | null {
+  if (depth > 6 || value === null || typeof value !== 'object') return null
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (key.toLowerCase() === 'subscriptionid' && typeof entry === 'string') return entry
+    const nested = findSubscriptionId(entry, depth + 1)
+    if (nested) return nested
+  }
+  return null
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).end()
@@ -79,6 +89,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
+
+  // The payload is signed, so a successful transaction carrying our own
+  // subscriptionId metadata can activate that subscription directly, even
+  // if its checkout session was never linked to the row.
+  if (eventType === 'transaction.success') {
+    let payload: unknown = null
+    try {
+      payload = JSON.parse(rawBody)
+    } catch {
+      payload = null
+    }
+    const subscriptionId = findSubscriptionId(payload, 0)
+    if (subscriptionId && /^[0-9a-f-]{36}$/i.test(subscriptionId)) {
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', subscriptionId)
+    }
+  }
 
   const { data: pendingSubs } = await supabase
     .from('subscriptions')
