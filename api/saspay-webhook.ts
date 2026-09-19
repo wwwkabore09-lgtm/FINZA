@@ -101,7 +101,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .from('subscriptions')
           .update({ status: 'active', updated_at: new Date().toISOString() })
           .eq('id', sub.id)
-      } else if (sessionData.data?.status && sessionData.data.status !== 'PENDING') {
+      } else if (
+        ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'REJECTED'].includes(
+          String(sessionData.data?.status ?? '').toUpperCase(),
+        )
+      ) {
         await supabase
           .from('subscriptions')
           .update({ status: 'cancelled', updated_at: new Date().toISOString() })

@@ -25,78 +25,97 @@ export function Subscription() {
   useEffect(() => {
     if (!householdId) return
     let cancelled = false
+    const returningFromPayment = searchParams.get('subscription') !== null
 
-    supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('household_id', householdId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data, error: fetchError }) => {
-        if (cancelled) return
-        if (fetchError) {
-          setError("Impossible de charger l'abonnement.")
-        } else {
-          setSubscription((data as Subscription) ?? null)
-        }
-        setLoading(false)
+    async function checkSession(sessionId: string): Promise<'completed' | 'pending' | 'failed'> {
+      const response = await fetch('/api/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
       })
-
-    return () => {
-      cancelled = true
+      const data = (await response.json()) as { status?: string }
+      if (data.status === 'completed') return 'completed'
+      if (data.status === 'failed') return 'failed'
+      return 'pending'
     }
-  }, [householdId])
 
-  useEffect(() => {
-    const subscriptionId = searchParams.get('subscription')
-    if (!subscriptionId) return
-
-    setConfirming(true)
-
-    async function confirm() {
-      const { data: row } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('id', subscriptionId as string)
-        .single()
-
-      const sessionId = (row as Subscription | null)?.saspay_session_id
-      if (!sessionId) {
-        setConfirming(false)
-        return
-      }
+    async function load() {
+      if (returningFromPayment) setConfirming(true)
 
       try {
-        const response = await fetch('/api/confirm-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        })
-        const data = (await response.json()) as { status?: string }
-        const nextStatus = data.status === 'completed' ? 'active' : data.status === 'pending' ? 'pending' : 'cancelled'
-
-        const { data: updated, error: updateError } = await supabase
+        // Re-check recent payments that never reached "active": the return
+        // from SasPay can arrive before the payment is recorded, and users
+        // may also close the tab before being redirected back.
+        const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: unfinished } = await supabase
           .from('subscriptions')
-          .update({ status: nextStatus, updated_at: new Date().toISOString() })
-          .eq('id', subscriptionId as string)
           .select('*')
-          .single()
-        if (!updateError && updated) {
-          setSubscription(updated as Subscription)
+          .eq('household_id', householdId as string)
+          .in('status', ['pending', 'cancelled'])
+          .not('saspay_session_id', 'is', null)
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        for (const row of (unfinished ?? []) as Subscription[]) {
+          if (cancelled || !row.saspay_session_id) break
+
+          let result = await checkSession(row.saspay_session_id)
+          for (let attempt = 0; attempt < 4 && result === 'pending' && returningFromPayment; attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 2500))
+            if (cancelled) return
+            result = await checkSession(row.saspay_session_id)
+          }
+
+          if (result === 'completed') {
+            await supabase
+              .from('subscriptions')
+              .update({ status: 'active', updated_at: new Date().toISOString() })
+              .eq('id', row.id)
+            break
+          }
+          if (result === 'failed' && row.status === 'pending') {
+            await supabase
+              .from('subscriptions')
+              .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+              .eq('id', row.id)
+          }
         }
       } catch {
-        setError('Impossible de confirmer le paiement.')
-      } finally {
-        setConfirming(false)
+        if (returningFromPayment && !cancelled) setError('Impossible de confirmer le paiement.')
+      }
+
+      if (cancelled) return
+
+      const { data: active, error: fetchError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('household_id', householdId as string)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (cancelled) return
+      if (fetchError) {
+        setError("Impossible de charger l'abonnement.")
+      } else {
+        setSubscription((active as Subscription) ?? null)
+      }
+      setConfirming(false)
+      setLoading(false)
+      if (returningFromPayment) {
         searchParams.delete('subscription')
         setSearchParams(searchParams, { replace: true })
       }
     }
 
-    confirm()
+    load()
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [householdId])
 
   async function handlePay(plan: (typeof PLANS)[number]) {
     if (!householdId) return
@@ -160,7 +179,7 @@ export function Subscription() {
 
     const { data, error: updateError } = await supabase
       .from('subscriptions')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .update({ status: 'cancelled', saspay_session_id: null, updated_at: new Date().toISOString() })
       .eq('id', subscription.id)
       .select('*')
       .single()

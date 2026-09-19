@@ -38,12 +38,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Rely on paid_at rather than guessing every possible success status string.
+    // Only known terminal failure statuses count as failed: any other unpaid
+    // status stays pending so a payment still being recorded is never lost.
+    const rawStatus = String(parsed.data?.status ?? '').toUpperCase()
+    const terminalFailures = ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'REJECTED']
     const status = parsed.data?.paid_at
       ? 'completed'
-      : parsed.data?.status === 'PENDING'
-        ? 'pending'
-        : 'failed'
-    res.status(200).json({ status })
+      : terminalFailures.includes(rawStatus)
+        ? 'failed'
+        : 'pending'
+    res.status(200).json({ status, rawStatus })
   } catch {
     res.status(502).json({ error: 'Impossible de contacter SasPay' })
   }
