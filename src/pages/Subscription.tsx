@@ -18,6 +18,7 @@ export function Subscription() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [payingPlan, setPayingPlan] = useState<string | null>(null)
+  const [confirmPlan, setConfirmPlan] = useState<(typeof PLANS)[number] | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [cancelling, setCancelling] = useState(false)
 
@@ -199,7 +200,8 @@ export function Subscription() {
       )}
 
       <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-        Paiement via SasPay — vérifie que le compte est en mode test avant de payer.
+        Paiement sécurisé via SasPay. Des frais de paiement (environ 5 %) s'ajoutent au prix du
+        forfait : le montant total exact s'affiche sur la page de paiement.
       </p>
 
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -214,6 +216,7 @@ export function Subscription() {
                 {formatCurrency(plan.priceXof)}
                 <span className="text-sm font-medium text-slate-400">/mois</span>
               </p>
+              <p className="mt-1 text-xs text-slate-400">+ frais de paiement</p>
               <ul className="mt-4 space-y-2">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
@@ -225,7 +228,7 @@ export function Subscription() {
               <button
                 type="button"
                 disabled={isActivePlan || payingPlan !== null}
-                onClick={() => handlePay(plan)}
+                onClick={() => setConfirmPlan(plan)}
                 className="mt-5 w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {isActivePlan
@@ -238,6 +241,63 @@ export function Subscription() {
           )
         })}
       </div>
+
+      {confirmPlan && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-payment-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <h2 id="confirm-payment-title" className="text-base font-semibold text-slate-900">
+              Confirmer le forfait {confirmPlan.name}
+            </h2>
+
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-slate-500">Prix du forfait</dt>
+                <dd className="font-medium text-slate-900">{formatCurrency(confirmPlan.priceXof)}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-slate-500">Frais de paiement</dt>
+                <dd className="font-medium text-slate-900">environ 5 %</dd>
+              </div>
+              <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                <dt className="font-semibold text-slate-900">Total à payer</dt>
+                <dd className="font-semibold text-slate-900">affiché sur la page SasPay</dd>
+              </div>
+            </dl>
+
+            <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              Avec Orange Money, génère ton code OTP pour le <strong>montant total exact</strong>{' '}
+              affiché sur la page SasPay (frais compris), pas pour le prix du forfait. Sinon le
+              paiement sera refusé.
+            </p>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmPlan(null)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const plan = confirmPlan
+                  setConfirmPlan(null)
+                  handlePay(plan)
+                }}
+                className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Continuer vers SasPay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
