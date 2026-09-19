@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
 
-    res.status(200).json({ checkoutUrl, sessionId })
+    res.status(200).json({ checkoutUrl, sessionId, debugData: parsed.data })
   } catch {
     res.status(502).json({ error: 'Impossible de contacter SasPay' })
   }
