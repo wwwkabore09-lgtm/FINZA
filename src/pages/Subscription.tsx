@@ -200,8 +200,8 @@ export function Subscription() {
       )}
 
       <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-        Paiement sécurisé via SasPay. Des frais de paiement (environ 5 %) s'ajoutent au prix du
-        forfait : le montant total exact s'affiche sur la page de paiement.
+        Paiement sécurisé via SasPay. Des frais de paiement s'ajoutent au prix du forfait : le
+        montant total exact s'affiche sur le bouton « Payer » de la page de paiement.
       </p>
 
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -261,7 +261,7 @@ export function Subscription() {
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-slate-500">Frais de paiement</dt>
-                <dd className="font-medium text-slate-900">environ 5 %</dd>
+                <dd className="font-medium text-slate-900">selon l'opérateur</dd>
               </div>
               <div className="flex items-center justify-between border-t border-slate-200 pt-2">
                 <dt className="font-semibold text-slate-900">Total à payer</dt>
@@ -270,9 +270,9 @@ export function Subscription() {
             </dl>
 
             <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-              Avec Orange Money, génère ton code OTP pour le <strong>montant total exact</strong>{' '}
-              affiché sur la page SasPay (frais compris), pas pour le prix du forfait. Sinon le
-              paiement sera refusé.
+              Avec Orange Money, génère ton code OTP pour le montant inscrit sur le bouton{' '}
+              <strong>« Payer »</strong> de la page SasPay (frais compris), même si la consigne en
+              jaune indique le prix du forfait. Un montant différent fait refuser le paiement.
             </p>
 
             <div className="mt-5 flex gap-3">
