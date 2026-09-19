@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : terminalFailures.includes(rawStatus)
         ? 'failed'
         : 'pending'
-    res.status(200).json({ status, rawStatus })
+    res.status(200).json({ status, rawStatus, paid: Boolean(parsed.data?.paid_at) })
   } catch {
     res.status(502).json({ error: 'Impossible de contacter SasPay' })
   }

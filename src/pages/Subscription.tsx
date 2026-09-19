@@ -21,6 +21,7 @@ export function Subscription() {
   const [confirmPlan, setConfirmPlan] = useState<(typeof PLANS)[number] | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [debugLines, setDebugLines] = useState<string[]>([])
 
   useEffect(() => {
     if (!householdId) return
@@ -102,6 +103,34 @@ export function Subscription() {
       } else {
         setSubscription((active as Subscription) ?? null)
       }
+
+      if (searchParams.get('debug') === '1') {
+        const { data: allRows } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('household_id', householdId as string)
+          .order('created_at', { ascending: false })
+          .limit(6)
+        const lines: string[] = []
+        for (const row of (allRows ?? []) as Subscription[]) {
+          let detail = 'pas de session SasPay'
+          if (row.saspay_session_id) {
+            try {
+              const r = await fetch('/api/confirm-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: row.saspay_session_id }),
+              })
+              detail = JSON.stringify(await r.json())
+            } catch {
+              detail = 'erreur réseau'
+            }
+          }
+          lines.push(`${row.id.slice(0, 8)} | ${row.plan} | ${row.status} | ${row.created_at.slice(0, 16)} | ${detail}`)
+        }
+        setDebugLines(lines)
+      }
+
       setConfirming(false)
       setLoading(false)
       if (returningFromPayment) {
@@ -206,6 +235,12 @@ export function Subscription() {
             : "Aucun forfait actif pour l'instant."}
         </p>
       </div>
+
+      {debugLines.length > 0 && (
+        <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+          {debugLines.join('\n')}
+        </pre>
+      )}
 
       {subscription?.status === 'active' && (
         <button
